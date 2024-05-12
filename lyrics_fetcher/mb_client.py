@@ -25,7 +25,7 @@ class Release:
             if relation.get('target-type') != 'url':
                 continue
             url = relation['url']['resource']
-            match = re.fullmatch(r'https://www.genie.co.kr/detail/albumInfo\?axnm=(\d+).*', url)
+            match = re.fullmatch(r'https://(?:www.)?genie.co.kr/detail/albumInfo\?axnm=(\d+).*', url)
             if match:
                 album_id = match.group(1)
                 try:
