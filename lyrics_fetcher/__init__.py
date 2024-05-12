@@ -15,4 +15,8 @@ def main():
 
     files = glob.iglob(path.join(collection_path, '**/*.*'), recursive=True)
     for file in files:
+        if path.isdir(file):
+            continue
+        if not file.lower().endswith('.flac') and not file.lower().endswith('.mp3'):
+            continue
         fetcher.fetch_lyrics(file)
