@@ -8,7 +8,7 @@ Build the wheel and install it with pip:
 
 ```bash
 python -m build --wheel
-pip install dist/lyriks-0.1.0-py3-none-any.whl
+pip install dist/lyriks-0.1.1-py3-none-any.whl
 ```
 
 Alternatively, you can directly run the script from the repository:

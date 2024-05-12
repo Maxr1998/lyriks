@@ -5,7 +5,7 @@ import requests
 from requests import JSONDecodeError
 
 API_URL = 'https://musicbrainz.org/ws/2'
-USER_AGENT = 'lyriks/0.1.0 ( max@maxr1998.de )'
+USER_AGENT = 'lyriks/0.1.1 ( max@maxr1998.de )'
 
 last_request_time = 0
 
