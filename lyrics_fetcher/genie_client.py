@@ -87,4 +87,7 @@ def fetch_lyrics(song_id: int) -> Lyrics | None:
         except KeyError:
             return None
 
+        if not raw_lyrics:
+            return None
+
         return Lyrics.static(unquote(raw_lyrics).split('<br>'))
