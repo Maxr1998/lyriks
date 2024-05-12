@@ -5,10 +5,10 @@ import mutagen
 from genie_client import fetch_genie_album_song_ids, GenieSong, fetch_lyrics
 from mb_client import get_release_by_track, get_releases_by_release_group, Release
 
-TITLE_TAG = 'TITLE'
-TRACK_TAG = 'TRACK'
-MB_RGID_TAG = 'MUSICBRAINZ_RELEASEGROUPID'
-MB_RTID_TAG = 'MUSICBRAINZ_RELEASETRACKID'
+TITLE_TAG = 'title'
+TRACKNUMBER_TAG = 'tracknumber'
+MB_RGID_TAG = 'musicbrainz_releasegroupid'
+MB_RTID_TAG = 'musicbrainz_releasetrackid'
 
 
 class LyricsFetcher:
@@ -16,8 +16,8 @@ class LyricsFetcher:
         self.release_cache = {}
         self.genie_cache = {}
 
-    def fetch_lyrics(self, file) -> bool:
-        basename = file.rsplit('.', 1)[0]
+    def fetch_lyrics(self, filename) -> bool:
+        basename = filename.rsplit('.', 1)[0]
         timed_lyrics_file = f'{basename}.lrc'
         static_lyrics_file = f'{basename}.txt'
 
@@ -25,18 +25,19 @@ class LyricsFetcher:
             # Skip if lyrics already exist
             return True
 
-        tags = mutagen.File(file)
-        if not tags or \
-                TITLE_TAG not in tags or \
-                TRACK_TAG not in tags or \
-                MB_RGID_TAG not in tags or \
-                MB_RTID_TAG not in tags:
+        file = mutagen.File(filename, easy=True)
+        if not file:
             return False
 
-        print(f'Processing {file}')
+        tags = file.tags
+        if (TITLE_TAG not in tags or TRACKNUMBER_TAG not in tags or
+                MB_RGID_TAG not in tags or MB_RTID_TAG not in tags):
+            return False
+
+        print(f'Processing {filename}')
 
         title = tags[TITLE_TAG][0]
-        track_number = int(tags[TRACK_TAG][0])
+        track_number = int(tags[TRACKNUMBER_TAG][0].split('/')[0])
         rg_mbid = tags[MB_RGID_TAG][0]
         track_mbid = tags[MB_RTID_TAG][0]
 
