@@ -116,7 +116,7 @@ class LyricsFetcher:
         for rg_release in rg_releases:
             if rg_release.get_track_count() != release.get_track_count():
                 continue
-            album_id = release.get_genie_album_id()
+            album_id = rg_release.get_genie_album_id()
             if album_id is not None:
                 return album_id
 
