@@ -56,7 +56,7 @@ class LyricsFetcher:
         if not lyrics:
             return False
 
-        print(f'Found lyrics for {title} / {song.song_name} [{song.song_id}], ', end='')
+        print(f'Found lyrics for {title} / {song.name} [{song.song_id}], ', end='')
 
         # Write lyrics to file
         if lyrics.is_timed:

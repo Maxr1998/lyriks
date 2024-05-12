@@ -14,9 +14,13 @@ CURL_USER_AGENT = 'curl/8.7.1'  # for whatever reason, this works, but the pytho
 
 
 class GenieSong:
-    def __init__(self, song_id: int, song_name: str):
+    def __init__(self, song_id: int, track: int, name: str):
         self.song_id = song_id
-        self.song_name = song_name
+        self.track = track
+        self.name = name
+
+    def __repr__(self):
+        return f'GenieSong(song_id={self.song_id}, track={self.track}, name={self.name})'
 
 
 def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
@@ -29,7 +33,6 @@ def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
 
     try:
         songs = list(response_json['DATA1']['DATA'])
-        songs = sorted(songs, key=lambda x: x['ROWNUM'])
     except KeyError:
         return None
 
@@ -38,18 +41,21 @@ def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
 
     for song in songs:
         song_id = song.get('SONG_ID')
+        row_num = song.get('ROWNUM')
         song_name = song.get('SONG_NAME')
 
-        if song_id is None or song_name is None:
+        if song_id is None or row_num is None or song_name is None:
             return None
 
         try:
             song_id = int(song_id)
+            row_num = int(row_num)
         except ValueError:
             return None
 
-        result.append(GenieSong(song_id=song_id, song_name=unquote(song_name)))
+        result.append(GenieSong(song_id=song_id, track=row_num, name=unquote(song_name)))
 
+    result = sorted(result, key=lambda x: x.track)
     return result
 
 
