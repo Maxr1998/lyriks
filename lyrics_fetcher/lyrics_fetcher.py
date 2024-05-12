@@ -120,4 +120,5 @@ class LyricsFetcher:
             if album_id is not None:
                 return album_id
 
+        print(f'No Genie URL found for release {release.title} [{release.id}]')
         return None

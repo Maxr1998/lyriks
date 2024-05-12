@@ -14,6 +14,7 @@ class Release:
     def __init__(self, data: dict):
         self.data = data
         self.id = data['id']
+        self.title = data['title']
 
     def get_track_count(self) -> int:
         return sum([media['track-count'] for media in self.data['media']])
