@@ -1,6 +1,6 @@
 # lyriks
 
-A command line tool that fetches lyrics from [Genie](http://www.genie.co.kr/).
+A command line tool that fetches lyrics from [Genie](https://www.genie.co.kr/).
 
 ### Installation
 
