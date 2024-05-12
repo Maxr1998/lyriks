@@ -4,7 +4,7 @@ from urllib.parse import unquote
 
 import requests
 
-from lyrics import Lyrics
+from .lyrics import Lyrics
 
 GENIE_ALBUM_API_URL = 'https://app.genie.co.kr/song/j_AlbumSongList.json?axnm={album_id:d}'
 GENIE_LYRICS_API_URL = 'https://dn.genie.co.kr/app/purchase/get_msl.asp?songid={song_id:d}&callback=GenieCallback'

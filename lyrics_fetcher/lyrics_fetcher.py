@@ -2,8 +2,8 @@ from os import path
 
 import mutagen
 
-from genie_client import fetch_genie_album_song_ids, GenieSong, fetch_lyrics
-from mb_client import get_release_by_track, get_releases_by_release_group, Release
+from .genie_client import fetch_genie_album_song_ids, GenieSong, fetch_lyrics
+from .mb_client import get_release_by_track, get_releases_by_release_group, Release
 
 TITLE_TAG = 'title'
 TRACKNUMBER_TAG = 'tracknumber'

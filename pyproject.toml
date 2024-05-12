@@ -1,0 +1,22 @@
+[project]
+name = "lyrics_fetcher"
+version = "0.0.1"
+description = "A command line tool to fetch lyrics from Genie"
+authors = [
+    { name = "Maxr1998", email = "max@maxr1998.de" },
+]
+license = { text = "GPLv3" }
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.28",
+    "mutagen>=1.45",
+]
+
+[project.scripts]
+fetch-lyrics = "lyrics_fetcher:main"
