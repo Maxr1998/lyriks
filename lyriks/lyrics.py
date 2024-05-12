@@ -1,5 +1,5 @@
 class Lyrics:
-    def __init__(self, lines, is_timed):
+    def __init__(self, lines: list[str], is_timed: bool):
         self._lines = lines
         self.is_timed = is_timed
 

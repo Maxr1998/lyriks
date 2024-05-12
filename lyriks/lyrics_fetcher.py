@@ -16,7 +16,7 @@ class LyricsFetcher:
         self.release_cache = {}
         self.genie_cache = {}
 
-    def fetch_lyrics(self, filename) -> bool:
+    def fetch_lyrics(self, filename: str) -> bool:
         basename = filename.rsplit('.', 1)[0]
         timed_lyrics_file = f'{basename}.lrc'
         static_lyrics_file = f'{basename}.txt'
@@ -69,7 +69,7 @@ class LyricsFetcher:
 
         return True
 
-    def get_release(self, track_mbid):
+    def get_release(self, track_mbid: str) -> Release | None:
         if track_mbid in self.release_cache:
             return self.release_cache[track_mbid]
 
@@ -83,7 +83,7 @@ class LyricsFetcher:
 
         return release
 
-    def get_genie_album(self, release: Release, rg_mbid) -> list[GenieSong] | None:
+    def get_genie_album(self, release: Release, rg_mbid: str) -> list[GenieSong] | None:
         if release.id in self.genie_cache:
             return self.genie_cache[release.id]
 
@@ -102,7 +102,7 @@ class LyricsFetcher:
         return songs
 
     @staticmethod
-    def get_genie_album_id(release: Release, rg_mbid):
+    def get_genie_album_id(release: Release, rg_mbid: str) -> int | None:
         # Try to get the album ID from the release itself first
         album_id = release.get_genie_album_id()
         if album_id is not None:

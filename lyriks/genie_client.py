@@ -19,7 +19,7 @@ class GenieSong:
         self.track = track
         self.name = name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'GenieSong(song_id={self.song_id}, track={self.track}, name={self.name})'
 
 
@@ -56,6 +56,7 @@ def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
         result.append(GenieSong(song_id=song_id, track=row_num, name=unquote(song_name)))
 
     result = sorted(result, key=lambda x: x.track)
+
     return result
 
 
