@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 from json.decoder import JSONDecodeError
 from urllib.parse import unquote
 
@@ -13,14 +14,11 @@ GENIE_STREAM_INFO_API_URL = 'https://stm.genie.co.kr/player/j_StmInfo.json?xgnm=
 CURL_USER_AGENT = 'curl/8.7.1'  # for whatever reason, this works, but the python-requests UA doesn't
 
 
+@dataclass
 class GenieSong:
-    def __init__(self, song_id: int, track: int, name: str):
-        self.song_id = song_id
-        self.track = track
-        self.name = name
-
-    def __repr__(self) -> str:
-        return f'GenieSong(song_id={self.song_id}, track={self.track}, name={self.name})'
+    song_id: int
+    track: int
+    name: str
 
 
 def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:

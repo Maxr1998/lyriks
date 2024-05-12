@@ -1,11 +1,14 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class Lyrics:
-    def __init__(self, lines: list[str], is_timed: bool):
-        self._lines = lines
-        self.is_timed = is_timed
+    lines: list[str]
+    is_timed: bool
 
     def write_to_file(self, path: str):
         with open(path, 'w') as f:
-            f.writelines(self._lines)
+            f.writelines(self.lines)
 
     @staticmethod
     def timed(lyrics_dict: dict[str, str]) -> 'Lyrics':
