@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import lyrics_fetcher
+import lyriks
 
 if __name__ == '__main__':
-    lyrics_fetcher.main()
+    lyriks.main()

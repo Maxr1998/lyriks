@@ -1,6 +1,6 @@
 [project]
-name = "lyrics_fetcher"
-version = "0.0.1"
+name = "lyriks"
+version = "0.1.0"
 description = "A command line tool to fetch lyrics from Genie"
 authors = [
     { name = "Maxr1998", email = "max@maxr1998.de" },
@@ -19,4 +19,4 @@ dependencies = [
 ]
 
 [project.scripts]
-fetch-lyrics = "lyrics_fetcher:main"
+lyriks = "lyriks:main"
