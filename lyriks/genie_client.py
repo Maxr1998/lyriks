@@ -86,7 +86,14 @@ def fetch_lyrics(song_id: int) -> Lyrics | None:
         except KeyError:
             return None
 
+        # Reject empty lyrics
         if not raw_lyrics:
             return None
 
-        return Lyrics.static(unquote(raw_lyrics).split('<br>'))
+        lines = unquote(raw_lyrics).split('<br>')
+
+        # Reject instrumental tracks
+        if '이 곡은 연주곡 입니다.' in lines:
+            return None
+
+        return Lyrics.static(lines)
