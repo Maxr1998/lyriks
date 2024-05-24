@@ -1,15 +1,14 @@
 import glob
 from os import path
-from sys import argv
 
+from .cli import parse_arguments
 from .lyrics_fetcher import LyricsFetcher
 
 
 def main():
-    if len(argv) != 2:
-        print('No path provided')
-        exit(1)
-    collection_path = argv[1]
+    args = parse_arguments()
+
+    collection_path = args.path
 
     fetcher = LyricsFetcher()
 
