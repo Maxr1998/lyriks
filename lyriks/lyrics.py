@@ -1,4 +1,9 @@
+import os
 from dataclasses import dataclass
+
+
+def opener(path: str, flags: int) -> int:
+    return os.open(path, flags, 0o644)
 
 
 @dataclass
@@ -7,7 +12,7 @@ class Lyrics:
     is_timed: bool
 
     def write_to_file(self, path: str):
-        with open(path, 'w') as f:
+        with open(path, 'w', opener=opener) as f:
             f.writelines(self.lines)
 
     @staticmethod
