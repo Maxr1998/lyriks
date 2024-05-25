@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 PROGNAME = 'lyriks'
-VERSION = '0.2.2'
+VERSION = '0.2.3'
 
 
 def parse_arguments():
