@@ -8,8 +8,30 @@ from .cli import VERSION
 
 API_URL = 'https://musicbrainz.org/ws/2'
 USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
+_ARTIST_INC = 'url-rels'
+_RELEASE_INC = 'artist-credits+media+url-rels'
 
 last_request_time = 0
+
+
+def handle_rate_limit():
+    global last_request_time
+    time_since = time.time() - last_request_time
+    if time_since < 1:
+        time.sleep(1 - time_since)
+    last_request_time = time.time()
+
+
+class Artist:
+    def __init__(self, data: dict):
+        self.data = data
+        self.id: str = data['id']
+        self.name: str = data['name']
+        self.urls: set = {
+            relation['url']['resource'] for relation in data.get('relations', [])
+            if relation.get('target-type') == 'url'
+        }
+        self.has_genie_url: bool = any('genie.co.kr' in url for url in self.urls)
 
 
 class Release:
@@ -17,6 +39,7 @@ class Release:
         self.data = data
         self.id: str = data['id']
         self.title: str = data['title']
+        self.artist_credit: dict = data['artist-credit']
 
     def get_track_count(self) -> int:
         return sum([media['track-count'] for media in self.data['media']])
@@ -38,14 +61,24 @@ class Release:
         return None
 
 
-def get_releases(browse_url: str) -> list[Release]:
-    global last_request_time
-    time_since = time.time() - last_request_time
-    if time_since < 1:
-        time.sleep(1 - time_since)
-    response = requests.get(browse_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
-    last_request_time = time.time()
+def get_artist(artist_mbid: str) -> Artist | None:
+    handle_rate_limit()
 
+    artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
+    response = requests.get(artist_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
+    try:
+        response_json = response.json()
+    except JSONDecodeError:
+        print(f'Error: could not fetch artist data for {artist_mbid}')
+        return None
+
+    return Artist(response_json)
+
+
+def get_releases(browse_url: str) -> list[Release]:
+    handle_rate_limit()
+
+    response = requests.get(browse_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
     try:
         response_json = response.json()
     except JSONDecodeError:
@@ -55,8 +88,8 @@ def get_releases(browse_url: str) -> list[Release]:
 
 
 def get_release_by_track(track_mbid: str) -> Release | None:
-    return next(iter(get_releases(f'{API_URL}/release?track={track_mbid}&status=official&inc=media+url-rels')), None)
+    return next(iter(get_releases(f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}')), None)
 
 
 def get_releases_by_release_group(rg_mbid: str) -> list[Release]:
-    return get_releases(f'{API_URL}/release?release-group={rg_mbid}&status=official&inc=media+url-rels')
+    return get_releases(f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}')

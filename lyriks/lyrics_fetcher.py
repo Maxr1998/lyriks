@@ -6,7 +6,7 @@ from os import path
 import mutagen
 
 from .genie_client import fetch_genie_album_song_ids, GenieSong, fetch_lyrics
-from .mb_client import get_release_by_track, get_releases_by_release_group, Release
+from .mb_client import Artist, Release, get_artist, get_release_by_track, get_releases_by_release_group
 
 TITLE_TAG = 'title'
 ALBUM_TAG = 'album'
@@ -16,11 +16,14 @@ MB_RTID_TAG = 'musicbrainz_releasetrackid'
 
 
 class LyricsFetcher:
-    def __init__(self, dry_run: bool = False, force: bool = False):
+    def __init__(self, check_artist: bool = False, dry_run: bool = False, force: bool = False):
+        self.check_artist = check_artist
         self.dry_run = dry_run
         self.force = force
+        self.artist_cache = {}
         self.release_cache = {}
         self.genie_cache = {}
+        self.missing_artists = set()
         self.missing_releases = set()
 
     def fetch_lyrics(self, filename: str) -> bool:
@@ -55,6 +58,17 @@ class LyricsFetcher:
         if not track_release:
             return False
 
+        # Check artist for Genie URL
+        if self.check_artist:
+            artist_info = track_release.artist_credit[0]['artist']
+            artist_mbid = artist_info['id']
+            if artist_mbid not in self.artist_cache:  # only check each artist once
+                artist = self.get_artist(artist_mbid, artist_info['name'])
+                if artist and not artist.has_genie_url:
+                    print(f'No Genie URL found for artist {artist.name} [{artist.id}]')
+                    self.missing_artists.add(artist)
+                    return False
+
         # Resolve Genie album
         songs = self.get_genie_album(track_release, rg_mbid)
         if not songs or track_release.get_track_count() != len(songs):
@@ -87,6 +101,23 @@ class LyricsFetcher:
                 lyrics.write_to_file(static_lyrics_file)
 
         return True
+
+    def get_artist(self, artist_mbid: str, artist_name: str) -> Artist | None:
+        if artist_mbid in self.artist_cache:
+            return self.artist_cache[artist_mbid]
+
+        print(f'Fetching artist info for {artist_name}', end='')
+
+        artist = get_artist(artist_mbid)
+        if not artist:
+            print(' - no artist found')
+            return None
+
+        self.artist_cache[artist_mbid] = artist
+
+        print()  # terminate line
+
+        return artist
 
     def get_release(self, track_mbid: str, album_name: str) -> Release | None:
         if track_mbid in self.release_cache:
@@ -154,7 +185,14 @@ class LyricsFetcher:
             f.write('<html>\n')
             f.write('<head><title>lyriks report</title></head>\n')
             f.write('<body>\n')
-            f.write('<h1>Releases missing Genie URLs</h1>\n')
+            f.write('<h1>lyriks report</h1>\n')
+            f.write('<h2>Artists missing Genie URLs</h2>\n')
+            f.write('<ul>\n')
+            for artist in self.missing_artists:
+                url = f'https://musicbrainz.org/artist/{artist.id}'
+                f.write(f'<li><a href="{url}">{html.escape(artist.name)}</a></li>\n')
+            f.write('</ul>\n')
+            f.write('<h2>Releases missing Genie URLs</h2>\n')
             f.write('<ul>\n')
             for release in self.missing_releases:
                 url = f'https://musicbrainz.org/release/{release.id}'

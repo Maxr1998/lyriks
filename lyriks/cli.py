@@ -12,6 +12,9 @@ def parse_arguments():
                 {PROGNAME} will recursively search for music files in this directory.
                 """
     parser.add_argument('collection_path', type=Path, metavar='path', help=path_help)
+    parser.add_argument('-a', '--check-artist',
+                        action='store_true',
+                        help='ensure artist has a Genie URL when processing albums')
     parser.add_argument('-n', '--dry-run', action='store_true', help='fetch lyrics without writing them to files')
     parser.add_argument('-f', '--force',
                         action='store_true',
