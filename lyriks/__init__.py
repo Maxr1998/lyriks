@@ -10,8 +10,13 @@ from .lyrics_fetcher import LyricsFetcher
 def main():
     args = parse_arguments()
 
-    collection_path = args.path
+    collection_path: Path = args.collection_path
     report_path: Path = args.report
+
+    # Validate collection path
+    if not collection_path.is_dir():
+        print(f'Error: directory \'{collection_path}\' does not exist', file=stderr)
+        exit(2)
 
     # Normalize and validate report path
     if report_path:

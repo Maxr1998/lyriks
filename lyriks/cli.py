@@ -11,7 +11,7 @@ def parse_arguments():
                 The path to the music collection.
                 {PROGNAME} will recursively search for music files in this directory.
                 """
-    parser.add_argument('path', type=str, help=path_help)
+    parser.add_argument('collection_path', type=Path, metavar='path', help=path_help)
     parser.add_argument('-n', '--dry-run', action='store_true', help='fetch lyrics without writing them to files')
     parser.add_argument('-f', '--force',
                         action='store_true',
