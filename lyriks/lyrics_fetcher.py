@@ -11,8 +11,10 @@ from .mb_client import Artist, Release, get_artist, get_release_by_track, get_re
 TITLE_TAG = 'title'
 ALBUM_TAG = 'album'
 TRACKNUMBER_TAG = 'tracknumber'
+ALBUMARTIST_TAG = 'albumartist'
 MB_RGID_TAG = 'musicbrainz_releasegroupid'
 MB_RTID_TAG = 'musicbrainz_releasetrackid'
+MB_RAID_TAG = 'musicbrainz_albumartistid'
 
 
 class LyricsFetcher:
@@ -20,11 +22,11 @@ class LyricsFetcher:
         self.check_artist = check_artist
         self.dry_run = dry_run
         self.force = force
-        self.artist_cache = {}
-        self.release_cache = {}
+        self.artist_cache: dict[str, Artist] = {}
+        self.release_cache: dict[str, Release] = {}
         self.genie_cache = {}
-        self.missing_artists = set()
-        self.missing_releases = set()
+        self.missing_artists: set[str] = set()
+        self.missing_releases: set[str] = set()
 
     def fetch_lyrics(self, filename: str) -> bool:
         basename = filename.rsplit('.', 1)[0]
@@ -53,21 +55,21 @@ class LyricsFetcher:
         rg_mbid = tags[MB_RGID_TAG][0]
         track_mbid = tags[MB_RTID_TAG][0]
 
+        # Check artist for Genie URL
+        if self.check_artist and MB_RAID_TAG in tags and ALBUMARTIST_TAG in tags:
+            albumartist_mbid = tags[MB_RAID_TAG][0]
+            albumartist = tags[ALBUMARTIST_TAG][0]
+            artist = self.get_artist(albumartist_mbid, albumartist)
+            if artist and not artist.has_genie_url:
+                if artist.id not in self.missing_artists:
+                    print(f'No Genie URL found for artist {artist.name} [{artist.id}]')
+                    self.missing_artists.add(artist.id)
+                return False
+
         # Resolve release for the track
         track_release = self.get_release(track_mbid, album)
         if not track_release:
             return False
-
-        # Check artist for Genie URL
-        if self.check_artist:
-            artist_info = track_release.artist_credit[0]['artist']
-            artist_mbid = artist_info['id']
-            if artist_mbid not in self.artist_cache:  # only check each artist once
-                artist = self.get_artist(artist_mbid, artist_info['name'])
-                if artist and not artist.has_genie_url:
-                    print(f'No Genie URL found for artist {artist.name} [{artist.id}]')
-                    self.missing_artists.add(artist)
-                    return False
 
         # Resolve Genie album
         songs = self.get_genie_album(track_release, rg_mbid)
@@ -175,7 +177,7 @@ class LyricsFetcher:
                 return album_id
 
         print(f'No Genie URL found for release {release.title} [{release.id}]')
-        self.missing_releases.add(release)
+        self.missing_releases.add(release.id)
 
         return None
 
@@ -188,15 +190,19 @@ class LyricsFetcher:
             f.write('<h1>lyriks report</h1>\n')
             f.write('<h2>Artists missing Genie URLs</h2>\n')
             f.write('<ul>\n')
-            for artist in self.missing_artists:
-                url = f'https://musicbrainz.org/artist/{artist.id}'
-                f.write(f'<li><a href="{url}">{html.escape(artist.name)}</a></li>\n')
+            for artist_mbid in self.missing_artists:
+                url = f'https://musicbrainz.org/artist/{artist_mbid}'
+                artist = self.artist_cache[artist_mbid]
+                artist_name = artist.name if artist else 'Unknown artist'
+                f.write(f'<li><a href="{url}">{html.escape(artist_name)}</a></li>\n')
             f.write('</ul>\n')
             f.write('<h2>Releases missing Genie URLs</h2>\n')
             f.write('<ul>\n')
-            for release in self.missing_releases:
-                url = f'https://musicbrainz.org/release/{release.id}'
-                f.write(f'<li><a href="{url}">{html.escape(release.title)}</a></li>\n')
+            for release_mbid in self.missing_releases:
+                url = f'https://musicbrainz.org/release/{release_mbid}'
+                release = self.release_cache[release_mbid]
+                release_name = release.title if release else 'Unknown release'
+                f.write(f'<li><a href="{url}">{html.escape(release_name)}</a></li>\n')
             f.write('</ul>\n')
             f.write('</body>\n')
             f.write('</html>')
