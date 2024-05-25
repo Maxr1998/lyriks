@@ -29,9 +29,8 @@ class LyricsFetcher:
 
         has_timed_lyrics = path.exists(timed_lyrics_file)
         has_static_lyrics = path.exists(static_lyrics_file)
-        has_nolyrics_file = path.exists(path.join(path.dirname(filename), '.nolyrics'))
 
-        if (has_timed_lyrics or has_static_lyrics or has_nolyrics_file) and not self.force:
+        if (has_timed_lyrics or has_static_lyrics) and not self.force:
             # Skip if lyrics already exist
             return True
 

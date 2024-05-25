@@ -1,4 +1,4 @@
-import glob
+import os
 from os import path
 from pathlib import Path
 from sys import stderr
@@ -24,13 +24,14 @@ def main():
 
     fetcher = LyricsFetcher(args.dry_run, args.force)
 
-    files = glob.iglob(path.join(collection_path, '**/*.*'), recursive=True)
-    for file in files:
-        if path.isdir(file):
+    for root_dir, dirs, files in os.walk(collection_path, topdown=True):
+        if path.exists(path.join(root_dir, '.nolyrics')):
+            dirs.clear()
             continue
-        if not file.lower().endswith('.flac') and not file.lower().endswith('.mp3'):
-            continue
-        fetcher.fetch_lyrics(file)
+
+        for file in files:
+            if file.lower().endswith('.flac') or file.lower().endswith('.mp3'):
+                fetcher.fetch_lyrics(path.join(root_dir, file))
 
     if report_path:
         try:
