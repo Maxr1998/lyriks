@@ -65,7 +65,7 @@ class LyricsFetcher:
         song = songs[track_number - 1]
         lyrics = fetch_lyrics(song.song_id)
         if not lyrics:
-            print(f' - no lyrics found')
+            print(' - no lyrics found')
             return False
 
         if self.dry_run:
