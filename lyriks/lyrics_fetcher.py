@@ -19,6 +19,7 @@ class LyricsFetcher:
         self.force = force
         self.release_cache = {}
         self.genie_cache = {}
+        self.missing_releases = set()
 
     def fetch_lyrics(self, filename: str) -> bool:
         basename = filename.rsplit('.', 1)[0]
@@ -122,8 +123,7 @@ class LyricsFetcher:
 
         return songs
 
-    @staticmethod
-    def get_genie_album_id(release: Release, rg_mbid: str) -> int | None:
+    def get_genie_album_id(self, release: Release, rg_mbid: str) -> int | None:
         # Try to get the album ID from the release itself first
         album_id = release.get_genie_album_id()
         if album_id is not None:
@@ -142,4 +142,19 @@ class LyricsFetcher:
                 return album_id
 
         print(f'No Genie URL found for release {release.title} [{release.id}]')
+        self.missing_releases.add(release)
+
         return None
+
+    def write_report(self, filename: str):
+        with open(filename, 'w') as file:
+            file.write('<html><head><title>lyriks report</title></head>')
+            file.write('<body>')
+            file.write('<h1>Releases missing Genie URLs</h1>')
+            file.write('<ul>')
+            for release in self.missing_releases:
+                url = f'https://musicbrainz.org/release/{release.id}'
+                file.write(f'<li><a href="{url}">{release.title}</a></li>')
+            file.write('</ul>')
+            file.write('</body>')
+            file.write('</html>')

@@ -16,6 +16,9 @@ def parse_arguments():
                         action='store_true',
                         help='force fetching lyrics for all tracks, even if they already have them'
                              ' - THIS WILL OVERWRITE EXISTING LYRICS FILES!')
+    parser.add_argument('-R', '--report',
+                        nargs='?', const='report.html',
+                        help='write a HTML report of releases missing album URLs to a file (default: report.html)')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
 
     return parser.parse_args()

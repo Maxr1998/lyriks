@@ -19,3 +19,6 @@ def main():
         if not file.lower().endswith('.flac') and not file.lower().endswith('.mp3'):
             continue
         fetcher.fetch_lyrics(file)
+
+    if args.report:
+        fetcher.write_report(filename=args.report)
