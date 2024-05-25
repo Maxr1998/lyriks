@@ -4,8 +4,10 @@ import time
 import requests
 from requests import JSONDecodeError
 
+from .cli import VERSION
+
 API_URL = 'https://musicbrainz.org/ws/2'
-USER_AGENT = 'lyriks/0.1.2 ( max@maxr1998.de )'
+USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
 
 last_request_time = 0
 

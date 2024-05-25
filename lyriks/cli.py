@@ -1,6 +1,7 @@
 import argparse
 
 PROGNAME = 'lyriks'
+VERSION = '0.1.2'
 
 
 def parse_arguments():
@@ -10,5 +11,6 @@ def parse_arguments():
                 {PROGNAME} will recursively search for music files in this directory.
                 """
     parser.add_argument('path', type=str, help=path_help)
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
 
     return parser.parse_args()
