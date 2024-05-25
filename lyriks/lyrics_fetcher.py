@@ -13,7 +13,8 @@ MB_RTID_TAG = 'musicbrainz_releasetrackid'
 
 
 class LyricsFetcher:
-    def __init__(self):
+    def __init__(self, dry_run: bool = False):
+        self.dry_run = dry_run
         self.release_cache = {}
         self.genie_cache = {}
 
@@ -60,13 +61,16 @@ class LyricsFetcher:
             print(f' - no lyrics found')
             return False
 
-        # Write lyrics to file
-        if lyrics.is_timed:
-            print(f' - writing to {timed_lyrics_file}')
-            lyrics.write_to_file(timed_lyrics_file)
+        if self.dry_run:
+            print(' - done [dry run]')
         else:
-            print(f' - writing to {static_lyrics_file}')
-            lyrics.write_to_file(static_lyrics_file)
+            # Write lyrics to file
+            if lyrics.is_timed:
+                print(f' - writing to {timed_lyrics_file}')
+                lyrics.write_to_file(timed_lyrics_file)
+            else:
+                print(f' - writing to {static_lyrics_file}')
+                lyrics.write_to_file(static_lyrics_file)
 
         return True
 

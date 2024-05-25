@@ -11,6 +11,7 @@ def parse_arguments():
                 {PROGNAME} will recursively search for music files in this directory.
                 """
     parser.add_argument('path', type=str, help=path_help)
+    parser.add_argument('-n', '--dry-run', action='store_true', help='fetch lyrics without writing them to files')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
 
     return parser.parse_args()

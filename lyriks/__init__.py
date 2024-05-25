@@ -10,7 +10,7 @@ def main():
 
     collection_path = args.path
 
-    fetcher = LyricsFetcher()
+    fetcher = LyricsFetcher(args.dry_run)
 
     files = glob.iglob(path.join(collection_path, '**/*.*'), recursive=True)
     for file in files:
