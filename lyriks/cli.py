@@ -1,7 +1,7 @@
 import argparse
 
 PROGNAME = 'lyriks'
-VERSION = '0.1.2'
+VERSION = '0.2.0'
 
 
 def parse_arguments():
