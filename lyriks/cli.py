@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 PROGNAME = 'lyriks'
 VERSION = '0.2.0'
@@ -17,8 +18,9 @@ def parse_arguments():
                         help='force fetching lyrics for all tracks, even if they already have them'
                              ' - THIS WILL OVERWRITE EXISTING LYRICS FILES!')
     parser.add_argument('-R', '--report',
-                        nargs='?', const='report.html',
-                        help='write a HTML report of releases missing album URLs to a file (default: report.html)')
+                        type=Path, nargs='?', metavar='path', const='report.html',
+                        help='write a HTML report of releases missing album URLs to a file at [path]'
+                             ' (default: report.html in the current directory)')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
 
     return parser.parse_args()

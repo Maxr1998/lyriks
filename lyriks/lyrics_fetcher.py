@@ -1,4 +1,5 @@
 import os
+from os import PathLike
 from os import path
 
 import mutagen
@@ -147,15 +148,15 @@ class LyricsFetcher:
 
         return None
 
-    def write_report(self, filename: str):
-        with open(filename, 'w') as file:
-            file.write('<html><head><title>lyriks report</title></head>')
-            file.write('<body>')
-            file.write('<h1>Releases missing Genie URLs</h1>')
-            file.write('<ul>')
+    def write_report(self, file: str | PathLike[str]):
+        with open(file, 'w') as f:
+            f.write('<html><head><title>lyriks report</title></head>')
+            f.write('<body>')
+            f.write('<h1>Releases missing Genie URLs</h1>')
+            f.write('<ul>')
             for release in self.missing_releases:
                 url = f'https://musicbrainz.org/release/{release.id}'
-                file.write(f'<li><a href="{url}">{release.title}</a></li>')
-            file.write('</ul>')
-            file.write('</body>')
-            file.write('</html>')
+                f.write(f'<li><a href="{url}">{release.title}</a></li>')
+            f.write('</ul>')
+            f.write('</body>')
+            f.write('</html>')
