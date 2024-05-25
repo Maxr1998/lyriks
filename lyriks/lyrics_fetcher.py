@@ -13,8 +13,9 @@ MB_RTID_TAG = 'musicbrainz_releasetrackid'
 
 
 class LyricsFetcher:
-    def __init__(self, dry_run: bool = False):
+    def __init__(self, dry_run: bool = False, force: bool = False):
         self.dry_run = dry_run
+        self.force = force
         self.release_cache = {}
         self.genie_cache = {}
 
@@ -23,7 +24,7 @@ class LyricsFetcher:
         timed_lyrics_file = f'{basename}.lrc'
         static_lyrics_file = f'{basename}.txt'
 
-        if path.exists(timed_lyrics_file) or path.exists(static_lyrics_file):
+        if (path.exists(timed_lyrics_file) or path.exists(static_lyrics_file)) and not self.force:
             # Skip if lyrics already exist
             return True
 
