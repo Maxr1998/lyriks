@@ -6,6 +6,7 @@ from .genie_client import fetch_genie_album_song_ids, GenieSong, fetch_lyrics
 from .mb_client import get_release_by_track, get_releases_by_release_group, Release
 
 TITLE_TAG = 'title'
+ALBUM_TAG = 'album'
 TRACKNUMBER_TAG = 'tracknumber'
 MB_RGID_TAG = 'musicbrainz_releasegroupid'
 MB_RTID_TAG = 'musicbrainz_releasetrackid'
@@ -30,19 +31,18 @@ class LyricsFetcher:
             return False
 
         tags = file.tags
-        if (TITLE_TAG not in tags or TRACKNUMBER_TAG not in tags or
+        if (TITLE_TAG not in tags or ALBUM_TAG not in tags or TRACKNUMBER_TAG not in tags or
                 MB_RGID_TAG not in tags or MB_RTID_TAG not in tags):
             return False
 
-        print(f'Processing {filename}')
-
         title = tags[TITLE_TAG][0]
+        album = tags[ALBUM_TAG][0]
         track_number = int(tags[TRACKNUMBER_TAG][0].split('/')[0])
         rg_mbid = tags[MB_RGID_TAG][0]
         track_mbid = tags[MB_RTID_TAG][0]
 
         # Resolve release for the track
-        track_release = self.get_release(track_mbid)
+        track_release = self.get_release(track_mbid, album)
         if not track_release:
             return False
 
@@ -51,35 +51,41 @@ class LyricsFetcher:
         if not songs or track_release.get_track_count() != len(songs):
             return False
 
+        print(f'Fetching lyrics for {title}', end='')
+
         # Fetch lyrics
         song = songs[track_number - 1]
         lyrics = fetch_lyrics(song.song_id)
         if not lyrics:
+            print(f' - no lyrics found')
             return False
-
-        print(f'Found lyrics for {title} / {song.name} [{song.song_id}], ', end='')
 
         # Write lyrics to file
         if lyrics.is_timed:
-            print(f'writing to {timed_lyrics_file}')
+            print(f' - writing to {timed_lyrics_file}')
             lyrics.write_to_file(timed_lyrics_file)
         else:
-            print(f'writing to {static_lyrics_file}')
+            print(f' - writing to {static_lyrics_file}')
             lyrics.write_to_file(static_lyrics_file)
 
         return True
 
-    def get_release(self, track_mbid: str) -> Release | None:
+    def get_release(self, track_mbid: str, album_name: str) -> Release | None:
         if track_mbid in self.release_cache:
             return self.release_cache[track_mbid]
 
+        print(f'Fetching release info for {album_name}', end='')
+
         release = get_release_by_track(track_mbid)
         if not release:
+            print(' - no release found')
             return None
 
         for media in release.data['media']:
             for track in media['tracks']:
                 self.release_cache[track['id']] = release
+
+        print()  # terminate line
 
         return release
 
