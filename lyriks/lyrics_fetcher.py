@@ -1,3 +1,4 @@
+import os
 from os import path
 
 import mutagen
@@ -24,7 +25,10 @@ class LyricsFetcher:
         timed_lyrics_file = f'{basename}.lrc'
         static_lyrics_file = f'{basename}.txt'
 
-        if (path.exists(timed_lyrics_file) or path.exists(static_lyrics_file)) and not self.force:
+        has_timed_lyrics = path.exists(timed_lyrics_file)
+        has_static_lyrics = path.exists(static_lyrics_file)
+
+        if (has_timed_lyrics or has_static_lyrics) and not self.force:
             # Skip if lyrics already exist
             return True
 
@@ -69,6 +73,12 @@ class LyricsFetcher:
             if lyrics.is_timed:
                 print(f' - writing to {timed_lyrics_file}')
                 lyrics.write_to_file(timed_lyrics_file)
+
+                # Remove static lyrics file if necessary
+                if has_static_lyrics:
+                    os.unlink(static_lyrics_file)
+            elif has_timed_lyrics:
+                print(' - not writing static lyrics, timed lyrics already exist')
             else:
                 print(f' - writing to {static_lyrics_file}')
                 lyrics.write_to_file(static_lyrics_file)
