@@ -25,8 +25,8 @@ class LyricsFetcher:
         self.artist_cache: dict[str, Artist] = {}
         self.release_cache: dict[str, Release] = {}
         self.genie_cache = {}
-        self.missing_artists: set[str] = set()
-        self.missing_releases: set[str] = set()
+        self.missing_artists: dict[str, Artist] = {}
+        self.missing_releases: dict[str, Release] = {}
 
     def fetch_lyrics(self, filename: str) -> bool:
         basename = filename.rsplit('.', 1)[0]
@@ -120,7 +120,7 @@ class LyricsFetcher:
 
         if artist.id not in self.missing_artists:
             print(f'No Genie URL found for artist {artist.name} [{artist.id}]')
-            self.missing_artists.add(artist.id)
+            self.missing_artists[artist.id] = artist
 
         return False
 
@@ -197,7 +197,7 @@ class LyricsFetcher:
                 return album_id
 
         print(f'No Genie URL found for release {release.title} [{release.id}]')
-        self.missing_releases.add(release.id)
+        self.missing_releases[release.id] = release
 
         return None
 
@@ -210,19 +210,15 @@ class LyricsFetcher:
             f.write('<h1>lyriks report</h1>\n')
             f.write('<h2>Artists missing Genie URLs</h2>\n')
             f.write('<ul>\n')
-            for artist_mbid in self.missing_artists:
-                url = f'https://musicbrainz.org/artist/{artist_mbid}'
-                artist = self.artist_cache[artist_mbid]
-                artist_name = artist.name if artist else 'Unknown artist'
-                f.write(f'<li><a href="{url}">{html.escape(artist_name)}</a></li>\n')
+            for artist in self.missing_artists.values():
+                url = f'https://musicbrainz.org/artist/{artist.id}'
+                f.write(f'<li><a href="{url}">{html.escape(artist.name)}</a></li>\n')
             f.write('</ul>\n')
             f.write('<h2>Releases missing Genie URLs</h2>\n')
             f.write('<ul>\n')
-            for release_mbid in self.missing_releases:
-                url = f'https://musicbrainz.org/release/{release_mbid}'
-                release = self.release_cache[release_mbid]
-                release_name = release.title if release else 'Unknown release'
-                f.write(f'<li><a href="{url}">{html.escape(release_name)}</a></li>\n')
+            for release in self.missing_releases.values():
+                url = f'https://musicbrainz.org/release/{release.id}'
+                f.write(f'<li><a href="{url}">{html.escape(release.title)}</a></li>\n')
             f.write('</ul>\n')
             f.write('</body>\n')
             f.write('</html>')
