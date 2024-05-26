@@ -49,11 +49,15 @@ class LyricsFetcher:
                 MB_RGID_TAG not in tags or MB_RTID_TAG not in tags):
             return False
 
-        title = tags[TITLE_TAG][0]
-        album = tags[ALBUM_TAG][0]
+        title = tags[TITLE_TAG][0] or 'Unknown title'
+        album = tags[ALBUM_TAG][0] or 'Unknown album'
         track_number = int(tags[TRACKNUMBER_TAG][0].split('/')[0])
         rg_mbid = tags[MB_RGID_TAG][0]
         track_mbid = tags[MB_RTID_TAG][0]
+
+        # Handle empty MBIDs
+        if not rg_mbid or not track_mbid:
+            return False
 
         # Check artist for Genie URL
         if self.check_artist and not self.has_artist_genie_url(tags):
@@ -106,7 +110,10 @@ class LyricsFetcher:
             return True
 
         albumartist_mbid = tags[MB_RAID_TAG][0]
-        albumartist = tags[ALBUMARTIST_TAG][0]
+        if not albumartist_mbid:  # handle empty MBID
+            return True
+
+        albumartist = tags[ALBUMARTIST_TAG][0] or 'Unknown artist'
         artist = self.get_artist(albumartist_mbid, albumartist)
         if not artist or artist.has_genie_url:
             return True
