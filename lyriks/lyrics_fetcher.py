@@ -56,15 +56,8 @@ class LyricsFetcher:
         track_mbid = tags[MB_RTID_TAG][0]
 
         # Check artist for Genie URL
-        if self.check_artist and MB_RAID_TAG in tags and ALBUMARTIST_TAG in tags:
-            albumartist_mbid = tags[MB_RAID_TAG][0]
-            albumartist = tags[ALBUMARTIST_TAG][0]
-            artist = self.get_artist(albumartist_mbid, albumartist)
-            if artist and not artist.has_genie_url:
-                if artist.id not in self.missing_artists:
-                    print(f'No Genie URL found for artist {artist.name} [{artist.id}]')
-                    self.missing_artists.add(artist.id)
-                return False
+        if self.check_artist and not self.has_artist_genie_url(tags):
+            return False
 
         # Resolve release for the track
         track_release = self.get_release(track_mbid, album)
@@ -103,6 +96,26 @@ class LyricsFetcher:
                 lyrics.write_to_file(static_lyrics_file)
 
         return True
+
+    def has_artist_genie_url(self, tags):
+        """
+        Check if the artist has a Genie URL.
+        :return: True if we're unable to check or if this artist has a Genie URL, False otherwise.
+        """
+        if MB_RAID_TAG not in tags or ALBUMARTIST_TAG not in tags:
+            return True
+
+        albumartist_mbid = tags[MB_RAID_TAG][0]
+        albumartist = tags[ALBUMARTIST_TAG][0]
+        artist = self.get_artist(albumartist_mbid, albumartist)
+        if not artist or artist.has_genie_url:
+            return True
+
+        if artist.id not in self.missing_artists:
+            print(f'No Genie URL found for artist {artist.name} [{artist.id}]')
+            self.missing_artists.add(artist.id)
+
+        return False
 
     def get_artist(self, artist_mbid: str, artist_name: str) -> Artist | None:
         if artist_mbid in self.artist_cache:
