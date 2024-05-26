@@ -73,7 +73,7 @@ def get_artist(artist_mbid: str) -> Artist | None:
         return None
 
     if 'error' in response_json:
-        print(f'Error: {response_json['error']}')
+        print(f'Error: {response_json["error"]}')
         return None
 
     return Artist(response_json)
