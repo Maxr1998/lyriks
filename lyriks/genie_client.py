@@ -16,7 +16,7 @@ CURL_USER_AGENT = 'curl/8.7.1'  # for whatever reason, this works, but the pytho
 
 @dataclass
 class GenieSong:
-    song_id: int
+    id: int
     track: int
     name: str
 
@@ -55,7 +55,7 @@ def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
         except ValueError:
             return None
 
-        result.append(GenieSong(song_id=song_id, track=track_num, name=unquote(song_name)))
+        result.append(GenieSong(id=song_id, track=track_num, name=unquote(song_name)))
 
     result = sorted(result, key=lambda x: x.track)
 

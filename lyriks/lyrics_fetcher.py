@@ -51,7 +51,6 @@ class LyricsFetcher:
 
         title = tags[TITLE_TAG][0] or 'Unknown title'
         album = tags[ALBUM_TAG][0] or 'Unknown album'
-        track_number = int(tags[TRACKNUMBER_TAG][0].split('/')[0])
         rg_mbid = tags[MB_RGID_TAG][0]
         track_mbid = tags[MB_RTID_TAG][0]
 
@@ -68,16 +67,29 @@ class LyricsFetcher:
         if not track_release:
             return False
 
+        # Resolve track
+        for medium in track_release.get_track_map():
+            track = medium.get(track_mbid)
+            if track:
+                break
+        else:
+            return False
+
         # Resolve Genie album
-        songs = self.get_genie_album(track_release, rg_mbid)
-        if not songs or track_release.get_track_count() != len(songs):
+        genie_songs = self.get_genie_songs(track_release, rg_mbid)
+        if not genie_songs:
+            return False
+
+        # Get Genie song for track
+        recording_mbid = track['recording']['id']
+        genie_song = genie_songs.get(recording_mbid)
+        if not genie_song:
             return False
 
         print(f'Fetching lyrics for {title}', end='')
 
         # Fetch lyrics
-        song = songs[track_number - 1]
-        lyrics = fetch_lyrics(song.song_id)
+        lyrics = fetch_lyrics(genie_song.id)
         if not lyrics:
             print(' - no lyrics found')
             return False
@@ -160,46 +172,69 @@ class LyricsFetcher:
 
         return release
 
-    def get_genie_album(self, release: Release, rg_mbid: str) -> list[GenieSong] | None:
-        if release.id in self.genie_cache:
-            return self.genie_cache[release.id]
+    def get_genie_songs(self, track_release: Release, rg_mbid: str) -> dict[str, GenieSong] | None:
+        """
+        Get Genie songs for a track release, matched to recordings.
 
-        album_id = self.get_genie_album_id(release, rg_mbid)
-        if not album_id:
-            self.genie_cache[release.id] = None
+        :return: A dictionary mapping recording MBIDs to Genie songs, or None if there was an error.
+        """
+        if track_release.id in self.genie_cache:
+            return self.genie_cache[track_release.id]
+
+        genie_release, album_id = self.get_genie_release(track_release, rg_mbid)
+        if not genie_release or not album_id:
+            self.genie_cache[track_release.id] = None
             return None
 
-        songs = fetch_genie_album_song_ids(album_id)
-        if not songs:
-            self.genie_cache[release.id] = None
+        genie_song_ids = fetch_genie_album_song_ids(album_id)
+        if not genie_song_ids:
+            self.genie_cache[track_release.id] = None
             return None
 
-        self.genie_cache[release.id] = songs
+        # Match recordings to Genie songs
+        genie_songs = {}
 
-        return songs
+        # Iterate over all tracks in the release
+        for medium in genie_release.media:
+            for track in medium['tracks']:
+                recording_mbid = track['recording']['id']
+                try:
+                    # Match song by track number if possible
+                    track_number = int(track['number'])
+                    song = next(song for song in genie_song_ids if song.track == track_number)
+                except (ValueError, StopIteration):
+                    # Fall back to track position
+                    track_index = track['position'] - 1
+                    if track_index >= len(genie_song_ids):
+                        continue
+                    song = genie_song_ids[track_index]
 
-    def get_genie_album_id(self, release: Release, rg_mbid: str) -> int | None:
+                genie_songs[recording_mbid] = song
+
+        self.genie_cache[track_release.id] = genie_songs
+
+        return genie_songs
+
+    def get_genie_release(self, track_release: Release, rg_mbid: str) -> tuple[Release | None, int | None]:
         # Try to get the album ID from the release itself first
-        album_id = release.get_genie_album_id()
+        album_id = track_release.get_genie_album_id()
         if album_id is not None:
-            return album_id
+            return track_release, album_id
 
         # If that fails, check all releases from the release group
         rg_releases = get_releases_by_release_group(rg_mbid)
         if not rg_releases:
-            return None
+            return None, None
 
         for rg_release in rg_releases:
-            if rg_release.get_track_count() != release.get_track_count():
-                continue
             album_id = rg_release.get_genie_album_id()
             if album_id is not None:
-                return album_id
+                return rg_release, album_id
 
-        print(f'No Genie URL found for release {release.title} [{release.id}]')
-        self.missing_releases[release.id] = release
+        print(f'No Genie URL found for release {track_release.title} [{track_release.id}]')
+        self.missing_releases[track_release.id] = track_release
 
-        return None
+        return None, None
 
     def write_report(self, file: str | PathLike[str]):
         with open(file, 'w') as f:

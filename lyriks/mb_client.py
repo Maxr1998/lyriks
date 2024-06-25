@@ -40,9 +40,10 @@ class Release:
         self.id: str = data['id']
         self.title: str = data['title']
         self.artist_credit: dict = data['artist-credit']
+        self.media: list = self.data['media']
 
-    def get_track_count(self) -> int:
-        return sum([media['track-count'] for media in self.data['media']])
+    def get_track_map(self) -> list[dict[str, dict]]:
+        return [{track['id']: track for track in medium['tracks']} for medium in self.media]
 
     def get_genie_album_id(self) -> int | None:
         relations = self.data['relations']
