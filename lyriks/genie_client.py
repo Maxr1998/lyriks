@@ -34,6 +34,10 @@ def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
     except KeyError:
         return None
 
+    # Reject albums with multiple CDs
+    if any(song.get('ALBUM_CD_NO') != '1' for song in songs):
+        return None
+
     # Extract songs
     result = []
 
