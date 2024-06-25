@@ -28,10 +28,11 @@ class LyricsFetcher:
         self.missing_artists: dict[str, Artist] = {}
         self.missing_releases: dict[str, Release] = {}
 
-    def fetch_lyrics(self, filename: str) -> bool:
+    def fetch_lyrics(self, dirname: str, filename: str) -> bool:
+        filepath = path.join(dirname, filename)
         basename = filename.rsplit('.', 1)[0]
-        timed_lyrics_file = f'{basename}.lrc'
-        static_lyrics_file = f'{basename}.txt'
+        timed_lyrics_file = path.join(dirname, f'{basename}.lrc')
+        static_lyrics_file = path.join(dirname, f'{basename}.txt')
 
         has_timed_lyrics = path.exists(timed_lyrics_file)
         has_static_lyrics = path.exists(static_lyrics_file)
@@ -40,7 +41,7 @@ class LyricsFetcher:
             # Skip if lyrics already exist
             return True
 
-        file = mutagen.File(filename, easy=True)
+        file = mutagen.File(filepath, easy=True)
         if not file:
             return False
 

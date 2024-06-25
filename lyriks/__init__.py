@@ -36,7 +36,7 @@ def main():
 
         for file in files:
             if file.lower().endswith('.flac') or file.lower().endswith('.mp3'):
-                fetcher.fetch_lyrics(path.join(root_dir, file))
+                fetcher.fetch_lyrics(root_dir, file)
 
     if report_path:
         try:
