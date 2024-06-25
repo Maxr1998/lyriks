@@ -18,10 +18,12 @@ MB_RAID_TAG = 'musicbrainz_albumartistid'
 
 
 class LyricsFetcher:
-    def __init__(self, check_artist: bool = False, dry_run: bool = False, force: bool = False):
+    def __init__(self, check_artist: bool = False, dry_run: bool = False, force: bool = False,
+                 skip_inst: bool = False):
         self.check_artist = check_artist
         self.dry_run = dry_run
         self.force = force
+        self.skip_inst = skip_inst
         self.artist_cache: dict[str, Artist] = {}
         self.release_cache: dict[str, Release] = {}
         self.genie_cache = {}
@@ -33,6 +35,10 @@ class LyricsFetcher:
         basename = filename.rsplit('.', 1)[0]
         timed_lyrics_file = path.join(dirname, f'{basename}.lrc')
         static_lyrics_file = path.join(dirname, f'{basename}.txt')
+
+        # Skip instrumental tracks if enabled and applicable
+        if self.skip_inst and ('instrumental' in basename.lower() or 'inst.' in basename.lower()):
+            return True
 
         has_timed_lyrics = path.exists(timed_lyrics_file)
         has_static_lyrics = path.exists(static_lyrics_file)

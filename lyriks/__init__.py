@@ -27,7 +27,7 @@ def main():
             print(f'Error: directory \'{report_path.parent}\' does not exist', file=stderr)
             exit(2)
 
-    fetcher = LyricsFetcher(args.check_artist, args.dry_run, args.force)
+    fetcher = LyricsFetcher(args.check_artist, args.dry_run, args.force, args.skip_instrumentals)
 
     for root_dir, dirs, files in os.walk(collection_path, topdown=True):
         if path.exists(path.join(root_dir, '.nolyrics')):
