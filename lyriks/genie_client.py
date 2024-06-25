@@ -43,19 +43,19 @@ def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
 
     for song in songs:
         song_id = song.get('SONG_ID')
-        row_num = song.get('ROWNUM')
+        track_num = song.get('ALBUM_TRACK_NO')
         song_name = song.get('SONG_NAME')
 
-        if song_id is None or row_num is None or song_name is None:
+        if song_id is None or track_num is None or song_name is None:
             return None
 
         try:
             song_id = int(song_id)
-            row_num = int(row_num)
+            track_num = int(track_num)
         except ValueError:
             return None
 
-        result.append(GenieSong(song_id=song_id, track=row_num, name=unquote(song_name)))
+        result.append(GenieSong(song_id=song_id, track=track_num, name=unquote(song_name)))
 
     result = sorted(result, key=lambda x: x.track)
 
