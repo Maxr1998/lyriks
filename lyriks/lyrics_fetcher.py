@@ -243,6 +243,7 @@ class LyricsFetcher:
 
         return None, None
 
+    # noinspection DuplicatedCode
     def write_report(self, file: str | PathLike[str]):
         with open(file, 'w') as f:
             f.write('<!DOCTYPE html>\n')
@@ -250,13 +251,13 @@ class LyricsFetcher:
             f.write('<head><title>lyriks report</title></head>\n')
             f.write('<body>\n')
             f.write('<h1>lyriks report</h1>\n')
-            f.write('<h2>Artists missing Genie URLs</h2>\n')
+            f.write(f'<h2>Artists missing Genie URLs ({len(self.missing_artists)})</h2>\n')
             f.write('<ul>\n')
             for artist in self.missing_artists.values():
                 url = f'https://musicbrainz.org/artist/{artist.id}'
                 f.write(f'<li><a href="{url}">{html.escape(artist.name)}</a></li>\n')
             f.write('</ul>\n')
-            f.write('<h2>Releases missing Genie URLs</h2>\n')
+            f.write(f'<h2>Releases missing Genie URLs ({len(self.missing_releases)})</h2>\n')
             f.write('<ul>\n')
             for release in self.missing_releases.values():
                 url = f'https://musicbrainz.org/release/{release.id}'
