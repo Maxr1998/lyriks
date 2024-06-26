@@ -1,6 +1,6 @@
 [project]
 name = "lyriks"
-version = "0.3.0"
+version = "0.3.1"
 description = "A command line tool to fetch lyrics from Genie"
 authors = [
     { name = "Maxr1998", email = "max@maxr1998.de" },
