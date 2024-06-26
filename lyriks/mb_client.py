@@ -9,7 +9,7 @@ from .cli import VERSION
 API_URL = 'https://musicbrainz.org/ws/2'
 USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
 _ARTIST_INC = 'url-rels'
-_RELEASE_INC = 'artist-credits+recordings+url-rels'
+_RELEASE_INC = 'artist-credits+recordings+media+url-rels'
 
 last_request_time = 0
 
@@ -41,6 +41,9 @@ class Release:
         self.title: str = data['title']
         self.artist_credit: dict = data['artist-credit']
         self.media: list = self.data['media']
+
+    def get_track_count(self) -> int:
+        return sum(medium['track-count'] for medium in self.media)
 
     def get_track_map(self) -> list[dict[str, dict]]:
         return [{track['id']: track for track in medium['tracks']} for medium in self.media]

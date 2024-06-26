@@ -233,6 +233,11 @@ class LyricsFetcher:
         if not rg_releases:
             return None, None
 
+        # Sort releases by track count delta
+        track_release_track_count = track_release.get_track_count()
+        rg_releases = sorted(rg_releases, key=lambda r: abs(r.get_track_count() - track_release_track_count))
+
+        # Return the first release group release with a Genie URL
         for rg_release in rg_releases:
             album_id = rg_release.get_genie_album_id()
             if album_id is not None:
