@@ -9,7 +9,7 @@ from .cli import VERSION
 API_URL = 'https://musicbrainz.org/ws/2'
 USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
 _ARTIST_INC = 'url-rels'
-_RELEASE_INC = 'artist-credits+media+url-rels'
+_RELEASE_INC = 'artist-credits+recordings+url-rels'
 
 last_request_time = 0
 
