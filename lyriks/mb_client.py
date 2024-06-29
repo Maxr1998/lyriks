@@ -51,7 +51,7 @@ class Release:
     def get_genie_album_id(self) -> int | None:
         relations = self.data['relations']
         for relation in relations:
-            if relation.get('target-type') != 'url':
+            if relation.get('target-type') != 'url' or relation.get('ended'):
                 continue
             url = relation['url']['resource']
             match = re.fullmatch(r'https://(?:www.)?genie.co.kr/detail/albumInfo\?axnm=(\d+).*', url)
