@@ -37,18 +37,23 @@ class LyricsFetcher:
     def fetch_lyrics(self, dirname: str, filename: str) -> bool:
         filepath = path.join(dirname, filename)
         basename = filename.rsplit('.', 1)[0]
-        timed_lyrics_file = path.join(dirname, f'{basename}.lrc')
-        static_lyrics_file = path.join(dirname, f'{basename}.txt')
 
         # Skip instrumental tracks if enabled and applicable
         if self.skip_inst and ('instrumental' in basename.lower() or 'inst.' in basename.lower()):
             return True
 
+        # Skip if .nolyrics file exists
+        nolyrics_file = path.join(dirname, f'{basename}.nolyrics')
+        if path.exists(nolyrics_file):
+            return True
+
+        timed_lyrics_file = path.join(dirname, f'{basename}.lrc')
+        static_lyrics_file = path.join(dirname, f'{basename}.txt')
         has_timed_lyrics = path.exists(timed_lyrics_file)
         has_static_lyrics = path.exists(static_lyrics_file)
 
+        # Skip if lyrics already exist
         if (has_timed_lyrics or has_static_lyrics) and not self.force:
-            # Skip if lyrics already exist
             return True
 
         file = mutagen.File(filepath, easy=True)
