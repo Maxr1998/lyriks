@@ -26,7 +26,7 @@ class LyricsFetcher:
         self.skip_inst = skip_inst
         self.artist_cache: dict[str, Artist] = {}
         self.release_cache: dict[str, Release] = {}
-        self.genie_cache = {}
+        self.genie_cache: dict[str, dict[str, GenieSong] | None] = {}
         self.missing_artists: dict[str, Artist] = {}
         self.missing_releases: dict[str, Release] = {}
 
@@ -210,7 +210,7 @@ class LyricsFetcher:
         # Iterate over all tracks in the release
         for medium in genie_release.media:
             for track in medium['tracks']:
-                recording_mbid = track['recording']['id']
+                recording_mbid: str = track['recording']['id']
                 try:
                     # Match song by track number if possible
                     track_number = int(track['number'])
