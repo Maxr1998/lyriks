@@ -4,6 +4,7 @@ from os import PathLike
 from os import path
 
 import mutagen
+from mutagen.easymp4 import EasyMP4Tags
 
 from .genie_client import fetch_genie_album_song_ids, GenieSong, fetch_lyrics
 from .mb_client import Artist, Release, get_artist, get_release_by_track, get_releases_by_release_group
@@ -15,6 +16,9 @@ ALBUMARTIST_TAG = 'albumartist'
 MB_RGID_TAG = 'musicbrainz_releasegroupid'
 MB_RTID_TAG = 'musicbrainz_releasetrackid'
 MB_RAID_TAG = 'musicbrainz_albumartistid'
+
+EasyMP4Tags.RegisterFreeformKey(MB_RGID_TAG, 'MusicBrainz Release Group Id')
+EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
 
 
 class LyricsFetcher:

@@ -35,7 +35,8 @@ def main():
             continue
 
         for file in files:
-            if file.lower().endswith('.flac') or file.lower().endswith('.mp3'):
+            extension = path.splitext(file)[1].lower()
+            if extension in ('.flac', '.m4a', '.mp3'):
                 fetcher.fetch_lyrics(root_dir, file)
 
     if report_path:
