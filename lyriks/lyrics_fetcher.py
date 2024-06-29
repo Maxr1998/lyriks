@@ -198,6 +198,12 @@ class LyricsFetcher:
             self.genie_cache[track_release.id] = None
             return None
 
+        # Ensure track count matches
+        if len(genie_song_ids) != genie_release.get_track_count():
+            print(f'Track count mismatch for release {track_release.title} [{track_release.id}]')
+            self.genie_cache[track_release.id] = None
+            return None
+
         # Match recordings to Genie songs
         genie_songs = {}
 
