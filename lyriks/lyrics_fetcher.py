@@ -17,6 +17,8 @@ MB_RGID_TAG = 'musicbrainz_releasegroupid'
 MB_RTID_TAG = 'musicbrainz_releasetrackid'
 MB_RAID_TAG = 'musicbrainz_albumartistid'
 
+VARIOUS_ARTISTS_MBID = '89ad4ac3-39f7-470e-963a-56509c546377'
+
 EasyMP4Tags.RegisterFreeformKey(MB_RGID_TAG, 'MusicBrainz Release Group Id')
 EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
 
@@ -137,6 +139,10 @@ class LyricsFetcher:
 
         albumartist_mbid = tags[MB_RAID_TAG][0]
         if not albumartist_mbid:  # handle empty MBID
+            return True
+
+        # Skip various artists
+        if albumartist_mbid == VARIOUS_ARTISTS_MBID:
             return True
 
         albumartist = tags[ALBUMARTIST_TAG][0] or 'Unknown artist'
