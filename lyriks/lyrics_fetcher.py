@@ -34,18 +34,18 @@ class LyricsFetcher:
         self.missing_artists: dict[str, Artist] = {}
         self.missing_releases: dict[str, Release] = {}
 
-    def fetch_lyrics(self, dirname: str, filename: str) -> bool:
+    def fetch_lyrics(self, dirname: str, filename: str) -> None:
         filepath = path.join(dirname, filename)
         basename = filename.rsplit('.', 1)[0]
 
         # Skip instrumental tracks if enabled and applicable
         if self.skip_inst and ('instrumental' in basename.lower() or 'inst.' in basename.lower()):
-            return True
+            return
 
         # Skip if .nolyrics file exists
         nolyrics_file = path.join(dirname, f'{basename}.nolyrics')
         if path.exists(nolyrics_file):
-            return True
+            return
 
         timed_lyrics_file = path.join(dirname, f'{basename}.lrc')
         static_lyrics_file = path.join(dirname, f'{basename}.txt')
@@ -54,16 +54,16 @@ class LyricsFetcher:
 
         # Skip if lyrics already exist
         if (has_timed_lyrics or has_static_lyrics) and not self.force:
-            return True
+            return
 
         file = mutagen.File(filepath, easy=True)
         if not file:
-            return False
+            return
 
         tags = file.tags
         if (TITLE_TAG not in tags or ALBUM_TAG not in tags or TRACKNUMBER_TAG not in tags or
                 MB_RGID_TAG not in tags or MB_RTID_TAG not in tags):
-            return False
+            return
 
         title = tags[TITLE_TAG][0] or 'Unknown title'
         album = tags[ALBUM_TAG][0] or 'Unknown album'
@@ -72,16 +72,16 @@ class LyricsFetcher:
 
         # Handle empty MBIDs
         if not rg_mbid or not track_mbid:
-            return False
+            return
 
         # Check artist for Genie URL
         if self.check_artist and not self.has_artist_genie_url(tags):
-            return False
+            return
 
         # Resolve release for the track
         track_release = self.get_release(track_mbid, album)
         if not track_release:
-            return False
+            return
 
         # Resolve track
         for medium in track_release.get_track_map():
@@ -89,18 +89,18 @@ class LyricsFetcher:
             if track:
                 break
         else:
-            return False
+            return
 
         # Resolve Genie album
         genie_songs = self.get_genie_songs(track_release, rg_mbid)
         if not genie_songs:
-            return False
+            return
 
         # Get Genie song for track
         recording_mbid = track['recording']['id']
         genie_song = genie_songs.get(recording_mbid)
         if not genie_song:
-            return False
+            return
 
         print(f'Fetching lyrics for {title}', end='')
 
@@ -108,7 +108,7 @@ class LyricsFetcher:
         lyrics = fetch_lyrics(genie_song.id)
         if not lyrics:
             print(' - no lyrics found')
-            return False
+            return
 
         if self.dry_run:
             print(' - done [dry run]')
@@ -126,8 +126,6 @@ class LyricsFetcher:
             else:
                 print(f' - writing to {static_lyrics_file}')
                 lyrics.write_to_file(static_lyrics_file)
-
-        return True
 
     def has_artist_genie_url(self, tags):
         """
