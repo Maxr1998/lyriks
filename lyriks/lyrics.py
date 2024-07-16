@@ -12,7 +12,7 @@ class Lyrics:
     is_timed: bool
 
     def write_to_file(self, path: str):
-        with open(path, 'w', opener=opener) as f:
+        with open(path, 'w', encoding='utf-8', opener=opener) as f:
             f.writelines(self.lines)
 
     @staticmethod
