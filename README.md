@@ -43,6 +43,17 @@ Thus, at least one release in the release group must have a URL relationship to 
 If successful, the lyrics will be downloaded and stored next to the audio files with the appropriate extension
 (`.lrc` or `.txt`, depending on whether they're synced or not).
 
+### Exclude files and folders
+
+You can recursively ignore folders by adding a (empty) `.nolyrics` file inside the folder you want to exclude.
+This can be useful for Western artists, where Genie is unlikely to have lyrics, or for instrumental releases.
+
+Likewise, you can ignore specific songs by creating a file with the same name as the audio file
+but the extension changed to `.nolyrics`.
+For example, a track named `01 Song.flac` can be excluded by creating a file named `01 Song.nolyrics`.
+
+Excluded files won't be queried at all, which can noticeably speed up the synchronisation process for large collections.
+
 [version-badge]: https://img.shields.io/pypi/v/lyriks
 
 [version-link]: https://pypi.org/project/lyriks/
