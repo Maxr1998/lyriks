@@ -1,4 +1,4 @@
-# lyriks
+# lyriks [![PyPI version][version-badge]][version-link] ![PyPI downloads][pypi-downloads]
 
 A command line tool that fetches lyrics from [Genie](https://www.genie.co.kr/).
 
@@ -42,6 +42,12 @@ Thus, at least one release in the release group must have a URL relationship to 
 
 If successful, the lyrics will be downloaded and stored next to the audio files with the appropriate extension
 (`.lrc` or `.txt`, depending on whether they're synced or not).
+
+[version-badge]: https://img.shields.io/pypi/v/lyriks
+
+[version-link]: https://pypi.org/project/lyriks/
+
+[pypi-downloads]: https://img.shields.io/pypi/dm/lyriks
 
 [rgid]: https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#musicbrainz-release-group-id
 
