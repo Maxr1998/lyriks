@@ -1,4 +1,4 @@
-# lyriks [![PyPI version][version-badge]][version-link] ![PyPI downloads][pypi-downloads]
+# lyriks [![License][license-badge]][license-link] [![PyPI version][version-badge]][version-link] ![PyPI downloads][pypi-downloads]
 
 A command line tool that fetches lyrics from [Genie](https://www.genie.co.kr/).
 
@@ -53,6 +53,10 @@ but the extension changed to `.nolyrics`.
 For example, a track named `01 Song.flac` can be excluded by creating a file named `01 Song.nolyrics`.
 
 Excluded files won't be queried at all, which can noticeably speed up the synchronisation process for large collections.
+
+[license-badge]: https://img.shields.io/github/license/Maxr1998/lyriks
+
+[license-link]: LICENSE
 
 [version-badge]: https://img.shields.io/pypi/v/lyriks
 
