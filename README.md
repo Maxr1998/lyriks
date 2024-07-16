@@ -4,14 +4,20 @@ A command line tool that fetches lyrics from [Genie](https://www.genie.co.kr/).
 
 ### Installation
 
-Build the wheel and install it with pip:
+You can easily install lyriks from PyPI by using `pip`:
+
+```bash
+pip install lyriks
+```
+
+To install it from source instead, clone the repository and build the wheel before installing it with pip:
 
 ```bash
 python -m build --wheel
 pip install dist/lyriks-0.3.3-py3-none-any.whl
 ```
 
-Alternatively, you can directly run the script from the repository:
+You can also run the script directly from within the repository:
 
 ```bash
 `./lyriks.py /path/to/music/folder`
