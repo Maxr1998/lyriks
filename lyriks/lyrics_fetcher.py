@@ -24,10 +24,15 @@ EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
 
 
 class LyricsFetcher:
-    def __init__(self, check_artist: bool = False, dry_run: bool = False, force: bool = False,
+    def __init__(self,
+                 check_artist: bool = False,
+                 dry_run: bool = False,
+                 upgrade: bool = False,
+                 force: bool = False,
                  skip_inst: bool = False):
         self.check_artist = check_artist
         self.dry_run = dry_run
+        self.upgrade = upgrade
         self.force = force
         self.skip_inst = skip_inst
         self.artist_cache: dict[str, Artist] = {}
@@ -55,7 +60,7 @@ class LyricsFetcher:
         has_static_lyrics = path.exists(static_lyrics_file)
 
         # Skip if lyrics already exist
-        if (has_timed_lyrics or has_static_lyrics) and not self.force:
+        if (has_timed_lyrics or (has_static_lyrics and not self.upgrade)) and not self.force:
             return
 
         file = mutagen.File(filepath, easy=True)
@@ -125,6 +130,8 @@ class LyricsFetcher:
                     os.unlink(static_lyrics_file)
             elif has_timed_lyrics:
                 print(' - not writing static lyrics, timed lyrics already exist')
+            elif self.upgrade and has_static_lyrics:
+                print(' - no timed lyrics available to upgrade to')
             else:
                 print(f' - writing to {static_lyrics_file}')
                 lyrics.write_to_file(static_lyrics_file)

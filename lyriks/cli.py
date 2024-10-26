@@ -15,7 +15,12 @@ def parse_arguments():
     parser.add_argument('-a', '--check-artist',
                         action='store_true',
                         help='ensure artist has a Genie URL when processing albums')
-    parser.add_argument('-n', '--dry-run', action='store_true', help='fetch lyrics without writing them to files')
+    parser.add_argument('-n', '--dry-run',
+                        action='store_true',
+                        help='fetch lyrics without writing them to files')
+    parser.add_argument('-u', '--upgrade',
+                        action='store_true',
+                        help='upgrade existing static lyrics to timed lyrics if possible')
     parser.add_argument('-f', '--force',
                         action='store_true',
                         help='force fetching lyrics for all tracks, even if they already have them'
