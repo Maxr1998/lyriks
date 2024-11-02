@@ -36,4 +36,4 @@ def _millis_to_lrc_timestamp(timestamp: int) -> str:
     minutes = timestamp // 60000
     seconds = (timestamp % 60000) // 1000
     centis = (timestamp % 1000) // 10
-    return f'[{minutes:02d}:{seconds:02d}:{centis:02d}]'
+    return f'[{minutes:02d}:{seconds:02d}.{centis:02d}]'
