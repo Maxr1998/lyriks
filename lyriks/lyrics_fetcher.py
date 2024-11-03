@@ -2,6 +2,8 @@ import html
 import os
 from os import PathLike
 from os import path
+from pathlib import Path
+from sys import stderr
 
 import mutagen
 from mutagen.easymp4 import EasyMP4Tags
@@ -21,6 +23,49 @@ VARIOUS_ARTISTS_MBID = '89ad4ac3-39f7-470e-963a-56509c546377'
 
 EasyMP4Tags.RegisterFreeformKey(MB_RGID_TAG, 'MusicBrainz Release Group Id')
 EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
+
+
+def main(
+        check_artist: bool,
+        dry_run: bool,
+        upgrade: bool,
+        force: bool,
+        skip_instrumentals: bool,
+        report_path: Path | None,
+        collection_path: Path,
+):
+    # Validate collection path
+    if not collection_path.is_dir():
+        print(f'Error: directory \'{collection_path}\' does not exist', file=stderr)
+        exit(2)
+
+    # Normalize and validate report path
+    if report_path:
+        report_path = report_path.expanduser().absolute()
+        if report_path.is_dir():
+            report_path = report_path / 'report.html'
+        if not report_path.parent.exists():
+            print(f'Error: directory \'{report_path.parent}\' does not exist', file=stderr)
+            exit(2)
+
+    fetcher = LyricsFetcher(check_artist, dry_run, upgrade, force, skip_instrumentals)
+
+    for root_dir, dirs, files in os.walk(collection_path, topdown=True):
+        if path.exists(path.join(root_dir, '.nolyrics')):
+            dirs.clear()
+            continue
+
+        for file in files:
+            extension = path.splitext(file)[1].lower()
+            if extension in ('.flac', '.m4a', '.mp3'):
+                fetcher.fetch_lyrics(root_dir, file)
+
+    if report_path:
+        try:
+            fetcher.write_report(report_path)
+        except OSError:
+            print(f'Error: could not write report to \'{report_path}\'', file=stderr)
+            exit(2)
 
 
 class LyricsFetcher:
