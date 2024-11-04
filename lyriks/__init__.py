@@ -4,7 +4,7 @@ import click
 
 from .const import PROGNAME, VERSION
 from .default_group import DefaultGroup
-from .lyrics_fetcher import main
+from .lyrics_fetcher import main, fetch_single_song
 
 
 @click.group(
@@ -74,3 +74,22 @@ def sync(
     report_path = Path(report_path) if report_path else None
     collection_path = Path(collection_path)
     main(check_artist, dry_run, upgrade, force, skip_instrumentals, report_path, collection_path)
+
+
+@cli.command()
+@click.option(
+    '-o', '--output', 'output_path', type=click.Path(),
+    help='write the lyrics to PATH (default: <song title>.<ext> in the current directory)',
+)
+@click.argument('song_id', type=int)
+@click.help_option(
+    '-h', '--help',
+    help='show this message and exit',
+)
+def fetch(song_id: int, output_path: str):
+    """
+    Fetch lyrics for a single song from Genie.
+
+    The song ID can be found in the URL of the song's Genie page.
+    """
+    fetch_single_song(song_id, output_path)

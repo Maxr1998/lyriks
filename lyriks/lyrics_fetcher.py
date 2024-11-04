@@ -68,6 +68,19 @@ def main(
             exit(2)
 
 
+def fetch_single_song(song_id: int, output_path: str):
+    lyrics = fetch_lyrics(song_id)
+    if lyrics is None:
+        print('Failed to fetch lyrics.')
+        return
+
+    extension = 'lrc' if lyrics.is_timed else 'txt'
+    output_path = output_path or f'{lyrics.song_title}.{extension}'
+    lyrics.write_to_file(output_path)
+
+    print(f'Lyrics saved to {output_path}')
+
+
 class LyricsFetcher:
     def __init__(self,
                  check_artist: bool = False,
