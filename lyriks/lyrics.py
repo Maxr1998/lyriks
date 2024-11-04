@@ -8,6 +8,8 @@ def opener(path: str, flags: int) -> int:
 
 @dataclass
 class Lyrics:
+    song_id: int
+    song_title: str
     lines: list[str]
     is_timed: bool
 
@@ -16,12 +18,12 @@ class Lyrics:
             f.writelines(self.lines)
 
     @staticmethod
-    def timed(lyrics_dict: dict[str, str]) -> 'Lyrics':
-        return Lyrics(_convert_to_lrc(lyrics_dict), is_timed=True)
+    def timed(song_id, song_title: str, lyrics_dict: dict[str, str]) -> 'Lyrics':
+        return Lyrics(song_id, song_title, _convert_to_lrc(lyrics_dict), is_timed=True)
 
     @staticmethod
-    def static(lyrics: list[str]) -> 'Lyrics':
-        return Lyrics([line + '\n' for line in lyrics], is_timed=False)
+    def static(song_id, song_title: str, lyrics: list[str]) -> 'Lyrics':
+        return Lyrics(song_id, song_title, [line + '\n' for line in lyrics], is_timed=False)
 
 
 def _convert_to_lrc(lyrics_dict: dict[str, str]) -> list[str]:

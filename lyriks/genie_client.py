@@ -63,30 +63,39 @@ def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
 
 
 def fetch_lyrics(song_id: int) -> Lyrics | None:
-    response = requests.get(GENIE_LYRICS_API_URL.format(song_id=song_id),
-                            headers={'User-Agent': CURL_USER_AGENT})
+    # Fetch stream info with general song info and static lyrics
+    try:
+        stream_info = requests.get(
+            GENIE_STREAM_INFO_API_URL.format(song_id=song_id),
+            headers={'User-Agent': CURL_USER_AGENT},
+        ).json()
+    except JSONDecodeError:
+        return None
 
-    response_text = response.text
-    if response_text.startswith('GenieCallback('):
+    try:
+        song_title = unquote(stream_info['DataSet']['DATA'][0]['SONG_NAME'])
+    except KeyError:
+        return None
+
+    # Try to fetch timed lyrics
+    lyrics_response = requests.get(
+        GENIE_LYRICS_API_URL.format(song_id=song_id),
+        headers={'User-Agent': CURL_USER_AGENT},
+    ).text
+
+    if lyrics_response.startswith('GenieCallback('):
         # We (probably) got timed lyrics
-        response_text = response.text.removeprefix('GenieCallback(').removesuffix(');')
+        lyrics_response = lyrics_response.removeprefix('GenieCallback(').removesuffix(');')
         try:
-            raw_lyrics = json.loads(response_text)
+            raw_lyrics = json.loads(lyrics_response)
         except JSONDecodeError:
             return None
 
-        return Lyrics.timed(raw_lyrics)
+        return Lyrics.timed(song_id, song_title, raw_lyrics)
     else:
         # Fall back to static lyrics
-        response = requests.get(GENIE_STREAM_INFO_API_URL.format(song_id=song_id),
-                                headers={'User-Agent': CURL_USER_AGENT})
         try:
-            response_json = response.json()
-        except JSONDecodeError:
-            return None
-
-        try:
-            raw_lyrics = response_json['DataSet']['DATA'][0]['LYRICS']
+            raw_lyrics = stream_info['DataSet']['DATA'][0]['LYRICS']
         except KeyError:
             return None
 
@@ -100,4 +109,4 @@ def fetch_lyrics(song_id: int) -> Lyrics | None:
         if '이 곡은 연주곡 입니다.' in lines:
             return None
 
-        return Lyrics.static(lines)
+        return Lyrics.static(song_id, song_title, lines)
