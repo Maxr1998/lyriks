@@ -5,6 +5,7 @@ import click
 from .const import PROGNAME, VERSION
 from .default_group import DefaultGroup
 from .lyrics_fetcher import main, fetch_single_song
+from .util import fix_timed_lyrics
 
 
 @click.group(
@@ -93,3 +94,15 @@ def fetch(song_id: int, output_path: str):
     The song ID can be found in the URL of the song's Genie page.
     """
     fetch_single_song(song_id, output_path)
+
+
+@cli.command()
+@click.argument('collection_path', type=click.Path(exists=True))
+def fix(collection_path: str):
+    """
+    Fix the format of timed lyrics in the collection.
+
+    Specifically, it replaces timestamps in the previously used format [mm:ss:xx] with [mm:ss.xx].
+    """
+    collection_path = Path(collection_path)
+    fix_timed_lyrics(collection_path)
