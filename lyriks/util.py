@@ -36,4 +36,4 @@ def fix_timed_lyrics_file(dirname: str, filename: str, timestamp_pattern: re.Pat
 
     print(f'Fixing timed lyrics format for "{filename}"')
     with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(file_content)
+        f.write(new_content)
