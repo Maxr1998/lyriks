@@ -20,4 +20,4 @@ dependencies = [
 ]
 
 [project.scripts]
-lyriks = "lyriks:main"
+lyriks = "lyriks:cli"
