@@ -5,7 +5,7 @@ from pathlib import Path
 from sys import stderr
 
 
-def fix_timed_lyrics(collection_path: Path):
+def fix_synced_lyrics(collection_path: Path):
     # Validate collection path
     if not collection_path.is_dir():
         print(f'Error: directory \'{collection_path}\' does not exist', file=stderr)
@@ -21,10 +21,10 @@ def fix_timed_lyrics(collection_path: Path):
         for file in files:
             extension = path.splitext(file)[1].lower()
             if extension == '.lrc':
-                fix_timed_lyrics_file(root_dir, file, timestamp_pattern)
+                fix_synced_lyrics_file(root_dir, file, timestamp_pattern)
 
 
-def fix_timed_lyrics_file(dirname: str, filename: str, timestamp_pattern: re.Pattern):
+def fix_synced_lyrics_file(dirname: str, filename: str, timestamp_pattern: re.Pattern):
     filepath = path.join(dirname, filename)
 
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -34,6 +34,6 @@ def fix_timed_lyrics_file(dirname: str, filename: str, timestamp_pattern: re.Pat
     if new_content == file_content:
         return
 
-    print(f'Fixing timed lyrics format for "{filename}"')
+    print(f'Fixing synced lyrics format for "{filename}"')
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(new_content)

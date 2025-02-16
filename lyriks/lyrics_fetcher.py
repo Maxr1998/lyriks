@@ -75,7 +75,7 @@ def fetch_single_song(provider: Provider, song_id: int, output_path: str):
         print('Failed to fetch lyrics.')
         return
 
-    extension = 'lrc' if lyrics.is_timed else 'txt'
+    extension = 'lrc' if lyrics.is_synced else 'txt'
     output_path = output_path or f'{lyrics.song_title}.{extension}'
     lyrics.write_to_file(output_path)
 
@@ -112,13 +112,13 @@ class LyricsFetcher:
         if path.exists(nolyrics_file):
             return
 
-        timed_lyrics_file = path.join(dirname, f'{basename}.lrc')
+        synced_lyrics_file = path.join(dirname, f'{basename}.lrc')
         static_lyrics_file = path.join(dirname, f'{basename}.txt')
-        has_timed_lyrics = path.exists(timed_lyrics_file)
+        has_synced_lyrics = path.exists(synced_lyrics_file)
         has_static_lyrics = path.exists(static_lyrics_file)
 
         # Skip if lyrics already exist
-        if (has_timed_lyrics or (has_static_lyrics and not self.upgrade)) and not self.force:
+        if (has_synced_lyrics or (has_static_lyrics and not self.upgrade)) and not self.force:
             return
 
         file = mutagen.File(filepath, easy=True)
@@ -168,17 +168,17 @@ class LyricsFetcher:
             print(' - done [dry run]')
         else:
             # Write lyrics to file
-            if lyrics.is_timed:
-                print(f' - writing to {timed_lyrics_file}')
-                lyrics.write_to_file(timed_lyrics_file)
+            if lyrics.is_synced:
+                print(f' - writing to {synced_lyrics_file}')
+                lyrics.write_to_file(synced_lyrics_file)
 
                 # Remove static lyrics file if necessary
                 if has_static_lyrics:
                     os.unlink(static_lyrics_file)
-            elif has_timed_lyrics:
-                print(' - not writing static lyrics, timed lyrics already exist')
+            elif has_synced_lyrics:
+                print(' - not writing static lyrics, synced lyrics already exist')
             elif self.upgrade and has_static_lyrics:
-                print(' - no timed lyrics available to upgrade to')
+                print(' - no synced lyrics available to upgrade to')
             else:
                 print(f' - writing to {static_lyrics_file}')
                 lyrics.write_to_file(static_lyrics_file)

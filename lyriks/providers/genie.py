@@ -57,21 +57,24 @@ class Genie(Provider):
         except KeyError:
             return None
 
-        # Try to fetch timed lyrics
+        # Try to fetch synced lyrics
         lyrics_response = requests.get(
             GENIE_LYRICS_API_URL.format(song_id=song_id),
             headers={'User-Agent': CURL_USER_AGENT},
         ).text
 
         if lyrics_response.startswith('GenieCallback('):
-            # We (probably) got timed lyrics
+            # We (probably) got synced lyrics
             lyrics_response = lyrics_response.removeprefix('GenieCallback(').removesuffix(');')
             try:
                 raw_lyrics = json.loads(lyrics_response)
             except JSONDecodeError:
                 return None
 
-            return Lyrics.timed(song_id, song_title, raw_lyrics)
+            # Convert timestamps and cleanup lines
+            lyrics_dict: dict[int, str] = {int(timestamp): line.strip() for timestamp, line in raw_lyrics.items()}
+
+            return Lyrics.synced(song_id, song_title, lyrics_dict)
         else:
             # Fall back to static lyrics
             try:

@@ -7,7 +7,7 @@ from .default_group import DefaultGroup
 from .lyrics_fetcher import main, fetch_single_song
 from .providers import Provider
 from .providers.genie import Genie
-from .util import fix_timed_lyrics
+from .util import fix_synced_lyrics
 
 
 @click.group(
@@ -39,7 +39,7 @@ def get_provider() -> Provider:
 )
 @click.option(
     '-u', '--upgrade', is_flag=True,
-    help='upgrade existing static lyrics to timed lyrics if possible',
+    help='upgrade existing static lyrics to synced lyrics if possible',
 )
 @click.option(
     '-f', '--force', is_flag=True,
@@ -108,9 +108,9 @@ def fetch(song_id: int, output_path: str):
 @click.argument('collection_path', type=click.Path(exists=True))
 def fix(collection_path: str):
     """
-    Fix the format of timed lyrics in the collection.
+    Fix the format of synced lyrics in the collection.
 
     Specifically, it replaces timestamps in the previously used format [mm:ss:xx] with [mm:ss.xx].
     """
     collection_path = Path(collection_path)
-    fix_timed_lyrics(collection_path)
+    fix_synced_lyrics(collection_path)
