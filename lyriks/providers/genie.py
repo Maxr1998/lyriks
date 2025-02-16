@@ -113,7 +113,7 @@ class Genie(Provider):
         if track_release.id in self.cache:
             return self.cache[track_release.id]
 
-        genie_release, album_id = self.get_genie_release(track_release)
+        genie_release, album_id = self.pick_release_from_release_group(track_release, lambda r: r.get_genie_album_id())
         if not genie_release or not album_id:
             self.cache[track_release.id] = None
             return None
@@ -152,32 +152,6 @@ class Genie(Provider):
         self.cache[track_release.id] = genie_songs
 
         return genie_songs
-
-    def get_genie_release(self, track_release: Release) -> tuple[Release | None, int | None]:
-        # Try to get the album ID from the release itself first
-        album_id = track_release.get_genie_album_id()
-        if album_id is not None:
-            return track_release, album_id
-
-        # If that fails, check all releases from the release group
-        rg_releases = get_releases_by_release_group(track_release.rg_mbid)
-        if not rg_releases:
-            return None, None
-
-        # Sort releases by track count delta
-        track_release_track_count = track_release.get_track_count()
-        rg_releases = sorted(rg_releases, key=lambda r: abs(r.get_track_count() - track_release_track_count))
-
-        # Return the first release group release with a Genie URL
-        for rg_release in rg_releases:
-            album_id = rg_release.get_genie_album_id()
-            if album_id is not None:
-                return rg_release, album_id
-
-        print(f'No Genie URL found for release {track_release.title} [{track_release.id}]')
-        self.missing_releases[track_release.id] = track_release
-
-        return None, None
 
     @staticmethod
     def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:

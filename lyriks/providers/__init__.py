@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import Callable
 
 from lyriks.lyrics import Lyrics
-from lyriks.mb_client import Release, Artist
+from lyriks.mb_client import Release, Artist, get_releases_by_release_group
 
 
 class Provider(ABC):
@@ -40,3 +41,32 @@ class Provider(ABC):
         :return: True if we're unable to check or if this artist has a URL, False otherwise.
         """
         pass
+
+    def pick_release_from_release_group(self, release: Release, selector: Callable[[Release], int | None]):
+        """
+        TODO: write docs, rename method and remove "album ID" references
+        """
+        # Try to get the album ID from the release itself first
+        selection = selector(release)
+        if selection is not None:
+            return release, selection
+
+        # If that fails, check all releases from the release group
+        rg_releases = get_releases_by_release_group(release.rg_mbid)
+        if not rg_releases:
+            return None, None
+
+        # Sort releases by track count delta
+        track_release_track_count = release.get_track_count()
+        rg_releases = sorted(rg_releases, key=lambda r: abs(r.get_track_count() - track_release_track_count))
+
+        # Return the first release group release with a Genie URL
+        for rg_release in rg_releases:
+            selection = selector(rg_release)
+            if selection is not None:
+                return rg_release, selection
+
+        print(f'No URL found for release {release.title} [{release.id}]')
+        self.missing_releases[release.id] = release
+
+        return None, None
