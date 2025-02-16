@@ -8,8 +8,8 @@ from sys import stderr
 import mutagen
 from mutagen.easymp4 import EasyMP4Tags
 
-from .genie_client import fetch_genie_album_song_ids, GenieSong, fetch_lyrics
-from .mb_client import Artist, Release, get_artist, get_release_by_track, get_releases_by_release_group
+from .mb_client import Artist, Release, get_artist, get_release_by_track
+from .providers import Provider
 
 TITLE_TAG = 'title'
 ALBUM_TAG = 'album'
@@ -26,6 +26,7 @@ EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
 
 
 def main(
+        provider: Provider,
         check_artist: bool,
         dry_run: bool,
         upgrade: bool,
@@ -48,7 +49,7 @@ def main(
             print(f'Error: directory \'{report_path.parent}\' does not exist', file=stderr)
             exit(2)
 
-    fetcher = LyricsFetcher(check_artist, dry_run, upgrade, force, skip_instrumentals)
+    fetcher = LyricsFetcher(provider, check_artist, dry_run, upgrade, force, skip_instrumentals)
 
     for root_dir, dirs, files in os.walk(collection_path, topdown=True):
         if path.exists(path.join(root_dir, '.nolyrics')):
@@ -68,8 +69,8 @@ def main(
             exit(2)
 
 
-def fetch_single_song(song_id: int, output_path: str):
-    lyrics = fetch_lyrics(song_id)
+def fetch_single_song(provider: Provider, song_id: int, output_path: str):
+    lyrics = provider.fetch_single_song(song_id)
     if lyrics is None:
         print('Failed to fetch lyrics.')
         return
@@ -83,11 +84,13 @@ def fetch_single_song(song_id: int, output_path: str):
 
 class LyricsFetcher:
     def __init__(self,
+                 provider: Provider,
                  check_artist: bool = False,
                  dry_run: bool = False,
                  upgrade: bool = False,
                  force: bool = False,
                  skip_inst: bool = False):
+        self.provider = provider
         self.check_artist = check_artist
         self.dry_run = dry_run
         self.upgrade = upgrade
@@ -95,9 +98,6 @@ class LyricsFetcher:
         self.skip_inst = skip_inst
         self.artist_cache: dict[str, Artist] = {}
         self.release_cache: dict[str, Release] = {}
-        self.genie_cache: dict[str, dict[str, GenieSong] | None] = {}
-        self.missing_artists: dict[str, Artist] = {}
-        self.missing_releases: dict[str, Release] = {}
 
     def fetch_lyrics(self, dirname: str, filename: str) -> None:
         filepath = path.join(dirname, filename)
@@ -139,8 +139,8 @@ class LyricsFetcher:
         if not rg_mbid or not track_mbid:
             return
 
-        # Check artist for Genie URL
-        if self.check_artist and not self.has_artist_genie_url(tags):
+        # Check artist URL
+        if self.check_artist and not self.has_artist_url(self.provider, tags):
             return
 
         # Resolve release for the track
@@ -156,21 +156,10 @@ class LyricsFetcher:
         else:
             return
 
-        # Resolve Genie album
-        genie_songs = self.get_genie_songs(track_release, rg_mbid)
-        if not genie_songs:
-            return
-
-        # Get Genie song for track
-        recording_mbid = track['recording']['id']
-        genie_song = genie_songs.get(recording_mbid)
-        if not genie_song:
-            return
-
-        print(f'Fetching lyrics for {title}', end='')
-
         # Fetch lyrics
-        lyrics = fetch_lyrics(genie_song.id)
+        print(f'Fetching lyrics for {title}', end='')
+        recording_mbid = track['recording']['id']
+        lyrics = self.provider.fetch_lyrics(track_release, recording_mbid)
         if not lyrics:
             print(' - no lyrics found')
             return
@@ -194,7 +183,7 @@ class LyricsFetcher:
                 print(f' - writing to {static_lyrics_file}')
                 lyrics.write_to_file(static_lyrics_file)
 
-    def has_artist_genie_url(self, tags):
+    def has_artist_url(self, provider: Provider, tags) -> bool:
         """
         Check if the artist has a Genie URL.
         :return: True if we're unable to check or if this artist has a Genie URL, False otherwise.
@@ -212,12 +201,8 @@ class LyricsFetcher:
 
         albumartist = tags[ALBUMARTIST_TAG][0] or 'Unknown artist'
         artist = self.get_artist(albumartist_mbid, albumartist)
-        if not artist or artist.has_genie_url:
+        if not artist or provider.has_artist_url(artist):
             return True
-
-        if artist.id not in self.missing_artists:
-            print(f'No Genie URL found for artist {artist.name} [{artist.id}]')
-            self.missing_artists[artist.id] = artist
 
         return False
 
@@ -257,81 +242,6 @@ class LyricsFetcher:
 
         return release
 
-    def get_genie_songs(self, track_release: Release, rg_mbid: str) -> dict[str, GenieSong] | None:
-        """
-        Get Genie songs for a track release, matched to recordings.
-
-        :return: A dictionary mapping recording MBIDs to Genie songs, or None if there was an error.
-        """
-        if track_release.id in self.genie_cache:
-            return self.genie_cache[track_release.id]
-
-        genie_release, album_id = self.get_genie_release(track_release, rg_mbid)
-        if not genie_release or not album_id:
-            self.genie_cache[track_release.id] = None
-            return None
-
-        genie_song_ids = fetch_genie_album_song_ids(album_id)
-        if not genie_song_ids:
-            self.genie_cache[track_release.id] = None
-            return None
-
-        # Ensure track count matches
-        if len(genie_song_ids) != genie_release.get_track_count():
-            print(f'Track count mismatch for release {track_release.title} [{track_release.id}]')
-            self.genie_cache[track_release.id] = None
-            return None
-
-        # Match recordings to Genie songs
-        genie_songs = {}
-
-        # Iterate over all tracks in the release
-        for medium in genie_release.media:
-            for track in medium['tracks']:
-                recording_mbid: str = track['recording']['id']
-                try:
-                    # Match song by track number if possible
-                    track_number = int(track['number'])
-                    song = next(song for song in genie_song_ids if song.track == track_number)
-                except (ValueError, StopIteration):
-                    # Fall back to track position
-                    track_index = track['position'] - 1
-                    if track_index >= len(genie_song_ids):
-                        continue
-                    song = genie_song_ids[track_index]
-
-                genie_songs[recording_mbid] = song
-
-        self.genie_cache[track_release.id] = genie_songs
-
-        return genie_songs
-
-    def get_genie_release(self, track_release: Release, rg_mbid: str) -> tuple[Release | None, int | None]:
-        # Try to get the album ID from the release itself first
-        album_id = track_release.get_genie_album_id()
-        if album_id is not None:
-            return track_release, album_id
-
-        # If that fails, check all releases from the release group
-        rg_releases = get_releases_by_release_group(rg_mbid)
-        if not rg_releases:
-            return None, None
-
-        # Sort releases by track count delta
-        track_release_track_count = track_release.get_track_count()
-        rg_releases = sorted(rg_releases, key=lambda r: abs(r.get_track_count() - track_release_track_count))
-
-        # Return the first release group release with a Genie URL
-        for rg_release in rg_releases:
-            album_id = rg_release.get_genie_album_id()
-            if album_id is not None:
-                return rg_release, album_id
-
-        print(f'No Genie URL found for release {track_release.title} [{track_release.id}]')
-        self.missing_releases[track_release.id] = track_release
-
-        return None, None
-
     # noinspection DuplicatedCode
     def write_report(self, file: str | PathLike[str]):
         with open(file, 'w') as f:
@@ -340,19 +250,19 @@ class LyricsFetcher:
             f.write('<head><title>lyriks report</title></head>\n')
             f.write('<body>\n')
             f.write('<h1>lyriks report</h1>\n')
-            f.write(f'<h2>Artists missing Genie URLs ({len(self.missing_artists)})</h2>\n')
-            if self.missing_artists:
+            f.write(f'<h2>Artists missing URLs ({len(self.provider.missing_artists)})</h2>\n')
+            if self.provider.missing_artists:
                 f.write('<ul>\n')
-                for artist in self.missing_artists.values():
+                for artist in self.provider.missing_artists.values():
                     url = f'https://musicbrainz.org/artist/{artist.id}'
                     f.write(f'<li><a href="{url}">{html.escape(artist.name)}</a></li>\n')
                 f.write('</ul>\n')
             else:
                 f.write('<p>None.</p>\n')
-            f.write(f'<h2>Releases missing Genie URLs ({len(self.missing_releases)})</h2>\n')
-            if self.missing_releases:
+            f.write(f'<h2>Releases missing URLs ({len(self.provider.missing_releases)})</h2>\n')
+            if self.provider.missing_releases:
                 f.write('<ul>\n')
-                for release in self.missing_releases.values():
+                for release in self.provider.missing_releases.values():
                     url = f'https://musicbrainz.org/release/{release.id}'
                     f.write(f'<li><a href="{url}">{html.escape(release.title)}</a></li>\n')
                 f.write('</ul>\n')

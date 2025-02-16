@@ -5,6 +5,8 @@ import click
 from .const import PROGNAME, VERSION
 from .default_group import DefaultGroup
 from .lyrics_fetcher import main, fetch_single_song
+from .providers import Provider
+from .providers.genie import Genie
 from .util import fix_timed_lyrics
 
 
@@ -20,6 +22,10 @@ from .util import fix_timed_lyrics
 )
 def cli():
     pass
+
+
+def get_provider() -> Provider:
+    return Genie()  # hardcoded until configuration logic is implemented
 
 
 @cli.command()
@@ -72,9 +78,10 @@ def sync(
     """
     A command line tool that fetches lyrics from Genie.
     """
+    provider = get_provider()
     report_path = Path(report_path) if report_path else None
     collection_path = Path(collection_path)
-    main(check_artist, dry_run, upgrade, force, skip_instrumentals, report_path, collection_path)
+    main(provider, check_artist, dry_run, upgrade, force, skip_instrumentals, report_path, collection_path)
 
 
 @cli.command()
@@ -93,7 +100,8 @@ def fetch(song_id: int, output_path: str):
 
     The song ID can be found in the URL of the song's Genie page.
     """
-    fetch_single_song(song_id, output_path)
+    provider = get_provider()
+    fetch_single_song(provider, song_id, output_path)
 
 
 @cli.command()

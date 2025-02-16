@@ -1,3 +1,4 @@
+import json
 import re
 import time
 
@@ -9,7 +10,7 @@ from .const import VERSION
 API_URL = 'https://musicbrainz.org/ws/2'
 USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
 _ARTIST_INC = 'url-rels'
-_RELEASE_INC = 'artist-credits+recordings+media+url-rels'
+_RELEASE_INC = 'artist-credits+release-groups+recordings+media+url-rels'
 
 last_request_time = 0
 
@@ -40,6 +41,7 @@ class Release:
         self.id: str = data['id']
         self.title: str = data['title']
         self.artist_credit: dict = data['artist-credit']
+        self.rg_mbid: str = data['release-group']['id']
         self.media: list = self.data['media']
 
     def get_track_count(self) -> int:
