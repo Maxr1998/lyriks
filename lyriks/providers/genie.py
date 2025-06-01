@@ -100,7 +100,7 @@ class Genie(Provider):
             return True
 
         if artist.id not in self.missing_artists:
-            print(f'No Genie URL found for artist {artist.name} [{artist.id}]')
+            print(f'\rNo Genie URL found for artist {artist.name} [{artist.id}]')
             self.missing_artists[artist.id] = artist
 
         return False
@@ -116,7 +116,7 @@ class Genie(Provider):
 
         result = pick_release_from_release_group(track_release, lambda r: r.get_genie_album_id())
         if not result:
-            print(f'No Genie URL found for release {track_release.title} [{track_release.id}]')
+            print(f'\rNo Genie URL found for release {track_release.title} [{track_release.id}]')
             self.cache[track_release.id] = None
             self.missing_releases[track_release.id] = track_release
             return None
@@ -129,7 +129,7 @@ class Genie(Provider):
 
         # Ensure track count matches
         if len(genie_song_ids) != genie_release.get_track_count():
-            print(f'Track count mismatch for release {track_release.title} [{track_release.id}]')
+            print(f'\rTrack count mismatch for release {track_release.title} [{track_release.id}]')
             self.cache[track_release.id] = None
             return None
 

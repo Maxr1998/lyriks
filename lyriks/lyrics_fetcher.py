@@ -157,30 +157,30 @@ class LyricsFetcher:
             return
 
         # Fetch lyrics
-        print(f'Fetching lyrics for {title}', end='')
+        print(f'Fetching lyrics for {title}', end='', flush=True)
         recording_mbid = track['recording']['id']
         lyrics = self.provider.fetch_recording_lyrics(track_release, recording_mbid)
         if not lyrics:
-            print(' - no lyrics found')
+            print(f'\rNo lyrics found for {title}')
             return
 
         if self.dry_run:
-            print(' - done [dry run]')
+            print(f'\rFetching lyrics for {title} - done [dry run]')
         else:
             # Write lyrics to file
             if lyrics.is_synced:
-                print(f' - writing to {synced_lyrics_file}')
+                print(f'\rFetching lyrics for {title} - writing to {synced_lyrics_file}')
                 lyrics.write_to_file(synced_lyrics_file)
 
                 # Remove static lyrics file if necessary
                 if has_static_lyrics:
                     os.unlink(static_lyrics_file)
             elif has_synced_lyrics:
-                print(' - not writing static lyrics, synced lyrics already exist')
+                print(f'\rFetching lyrics for {title} - not writing static lyrics, synced lyrics already exist')
             elif self.upgrade and has_static_lyrics:
-                print(' - no synced lyrics available to upgrade to')
+                print(f'\rFetching lyrics for {title} - no synced lyrics available to upgrade to')
             else:
-                print(f' - writing to {static_lyrics_file}')
+                print(f'\rFetching lyrics for {title} - writing to {static_lyrics_file}')
                 lyrics.write_to_file(static_lyrics_file)
 
     def has_artist_url(self, provider: Provider, tags) -> bool:
