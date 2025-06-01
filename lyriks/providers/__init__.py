@@ -20,16 +20,19 @@ class Provider(ABC):
         self.missing_releases: dict[str, Release] = {}
 
     @abstractmethod
-    def fetch_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
+    def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
         """
-        Fetch lyrics for a single song, given by its recording MBID and the actual release it appears on.
+        Fetch lyrics for a track, identified by its recording MBID and the release it appears on.
+
+        Typically, this resolves the provider-specific song id and then
+        delegates to fetch_provider_song_lyrics to fetch the lyrics.
         """
         pass
 
     @abstractmethod
-    def fetch_single_song(self, track_id):
+    def fetch_provider_song_lyrics(self, song_id) -> Lyrics | None:
         """
-        Fetch lyrics for a specific song. The track_id uniquely identifies the song, its format is provider-specific.
+        Fetch lyrics for a song, identified by song_id. Its format may be provider-specific.
         """
         pass
 

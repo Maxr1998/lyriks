@@ -19,7 +19,9 @@ class Lyrics:
 
     @staticmethod
     def synced(song_id, song_title: str, lyrics_dict: dict[int, str]) -> 'Lyrics':
-        """Constructs a synced lyrics object from a dict of timestamps/lines."""
+        """
+        Constructs a synced lyrics object from a dict of timestamps/lines.
+        """
         return Lyrics(song_id, song_title, _convert_to_lrc(lyrics_dict), is_synced=True)
 
     @staticmethod
@@ -28,7 +30,9 @@ class Lyrics:
 
 
 def _convert_to_lrc(lyrics_dict: dict[int, str]) -> list[str]:
-    """Takes a dict of millis/lines, and converts it to the lrc format."""
+    """
+    Takes a dict of millis/lines and converts it to the lrc format.
+    """
     sorted_lines = sorted(lyrics_dict.items())
     formatted_lines = [f'{_millis_to_lrc_timestamp(timestamp)}{line}\n' for timestamp, line in sorted_lines]
     return formatted_lines

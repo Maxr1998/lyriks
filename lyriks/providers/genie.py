@@ -29,21 +29,21 @@ class Genie(Provider):
     Provider for Genie Music.
     """
 
-    def fetch_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
+    def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
         # Resolve Genie album
         genie_songs = self.get_genie_songs(track_release)
         if not genie_songs:
             return None
 
-        # Get Genie song for track
+        # Get Genie song for recording
         genie_song = genie_songs.get(recording_mbid)
         if not genie_song:
             return None
 
         # Fetch lyrics
-        return self.fetch_single_song(genie_song.id)
+        return self.fetch_provider_song_lyrics(genie_song.id)
 
-    def fetch_single_song(self, song_id: int) -> Lyrics | None:
+    def fetch_provider_song_lyrics(self, song_id: int) -> Lyrics | None:
         # Fetch stream info with general song info and static lyrics
         try:
             stream_info = requests.get(

@@ -17,7 +17,7 @@ TRACKNUMBER_TAG = 'tracknumber'
 ALBUMARTIST_TAG = 'albumartist'
 MB_RGID_TAG = 'musicbrainz_releasegroupid'
 MB_RTID_TAG = 'musicbrainz_releasetrackid'
-MB_RAID_TAG = 'musicbrainz_albumartistid'
+MB_AAID_TAG = 'musicbrainz_albumartistid'
 
 VARIOUS_ARTISTS_MBID = '89ad4ac3-39f7-470e-963a-56509c546377'
 
@@ -70,7 +70,7 @@ def main(
 
 
 def fetch_single_song(provider: Provider, song_id: int, output_path: str):
-    lyrics = provider.fetch_single_song(song_id)
+    lyrics = provider.fetch_provider_song_lyrics(song_id)
     if lyrics is None:
         print('Failed to fetch lyrics.')
         return
@@ -159,7 +159,7 @@ class LyricsFetcher:
         # Fetch lyrics
         print(f'Fetching lyrics for {title}', end='')
         recording_mbid = track['recording']['id']
-        lyrics = self.provider.fetch_lyrics(track_release, recording_mbid)
+        lyrics = self.provider.fetch_recording_lyrics(track_release, recording_mbid)
         if not lyrics:
             print(' - no lyrics found')
             return
@@ -188,10 +188,10 @@ class LyricsFetcher:
         Check if the artist has a Genie URL.
         :return: True if we're unable to check or if this artist has a Genie URL, False otherwise.
         """
-        if MB_RAID_TAG not in tags or ALBUMARTIST_TAG not in tags:
+        if MB_AAID_TAG not in tags or ALBUMARTIST_TAG not in tags:
             return True
 
-        albumartist_mbid = tags[MB_RAID_TAG][0]
+        albumartist_mbid = tags[MB_AAID_TAG][0]
         if not albumartist_mbid:  # handle empty MBID
             return True
 
