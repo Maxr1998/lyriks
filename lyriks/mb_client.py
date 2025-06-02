@@ -1,9 +1,8 @@
-import json
 import re
 import time
+from json.decoder import JSONDecodeError
 
-import requests
-from requests import JSONDecodeError
+import httpx
 
 from .const import VERSION
 
@@ -71,7 +70,7 @@ def get_artist(artist_mbid: str) -> Artist | None:
     handle_rate_limit()
 
     artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
-    response = requests.get(artist_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
+    response = httpx.get(artist_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
     try:
         response_json = response.json()
     except JSONDecodeError:
@@ -88,7 +87,7 @@ def get_artist(artist_mbid: str) -> Artist | None:
 def get_releases(browse_url: str) -> list[Release]:
     handle_rate_limit()
 
-    response = requests.get(browse_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
+    response = httpx.get(browse_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
     try:
         response_json = response.json()
     except JSONDecodeError:

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from json.decoder import JSONDecodeError
 from urllib.parse import unquote
 
-import requests
+import httpx
 
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release, Artist
@@ -46,7 +46,7 @@ class Genie(Provider):
     def fetch_provider_song_lyrics(self, song_id: int) -> Lyrics | None:
         # Fetch stream info with general song info and static lyrics
         try:
-            stream_info = requests.get(
+            stream_info = httpx.get(
                 GENIE_STREAM_INFO_API_URL.format(song_id=song_id),
                 headers={'User-Agent': CURL_USER_AGENT},
             ).json()
@@ -59,7 +59,7 @@ class Genie(Provider):
             return None
 
         # Try to fetch synced lyrics
-        lyrics_response = requests.get(
+        lyrics_response = httpx.get(
             GENIE_LYRICS_API_URL.format(song_id=song_id),
             headers={'User-Agent': CURL_USER_AGENT},
         ).text
@@ -159,8 +159,8 @@ class Genie(Provider):
 
     @staticmethod
     def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
-        response = requests.get(GENIE_ALBUM_API_URL.format(album_id=album_id),
-                                headers={'User-Agent': CURL_USER_AGENT})
+        response = httpx.get(GENIE_ALBUM_API_URL.format(album_id=album_id),
+                             headers={'User-Agent': CURL_USER_AGENT})
         try:
             response_json = response.json()
         except JSONDecodeError:
