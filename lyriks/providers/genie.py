@@ -7,7 +7,7 @@ import httpx
 
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release, Artist
-from lyriks.providers import Provider
+from lyriks.providers import Provider, Song
 from lyriks.providers.util import pick_release_from_release_group
 
 GENIE_ALBUM_API_URL = 'https://app.genie.co.kr/song/j_AlbumSongList.json?axnm={album_id:d}'
@@ -18,7 +18,7 @@ CURL_USER_AGENT = 'curl/8.7.1'  # for whatever reason, this works, but the pytho
 
 
 @dataclass
-class GenieSong:
+class GenieSong(Song):
     id: int
     track: int
     name: str
@@ -41,21 +41,29 @@ class Genie(Provider):
             return None
 
         # Fetch lyrics
-        return self.fetch_provider_song_lyrics(genie_song.id)
+        return self.fetch_provider_song_lyrics(genie_song)
 
-    def fetch_provider_song_lyrics(self, song_id: int) -> Lyrics | None:
-        # Fetch stream info with general song info and static lyrics
-        try:
-            stream_info = httpx.get(
-                GENIE_STREAM_INFO_API_URL.format(song_id=song_id),
-                headers={'User-Agent': CURL_USER_AGENT},
-            ).json()
-        except JSONDecodeError:
+    def fetch_song_by_id(self, song_id: int) -> Song | None:
+        stream_info = self.fetch_genie_stream_info(song_id)
+        if stream_info is None:
             return None
 
         try:
-            song_title = unquote(stream_info['DataSet']['DATA'][0]['SONG_NAME'])
+            album_id = int(stream_info['DataSet']['DATA'][0]['ALBUM_ID'])
         except KeyError:
+            return None
+
+        genie_songs = self.fetch_genie_album_song_ids(album_id)
+        if not genie_songs:
+            return None
+
+        return next((s for s in genie_songs if s.id == song_id), None)
+
+    def fetch_provider_song_lyrics(self, song: GenieSong) -> Lyrics | None:
+        # Fetch stream info with general song info and static lyrics
+        song_id = song.id
+        stream_info = self.fetch_genie_stream_info(song_id)
+        if not stream_info:
             return None
 
         # Try to fetch synced lyrics
@@ -75,7 +83,7 @@ class Genie(Provider):
             # Convert timestamps and cleanup lines
             lyrics_dict: dict[int, str] = {int(timestamp): line.strip() for timestamp, line in raw_lyrics.items()}
 
-            return Lyrics.synced(song_id, song_title, lyrics_dict)
+            return Lyrics.synced(song_id, song.name, lyrics_dict)
         else:
             # Fall back to static lyrics
             try:
@@ -93,7 +101,7 @@ class Genie(Provider):
             if '이 곡은 연주곡 입니다.' in lines:
                 return None
 
-            return Lyrics.static(song_id, song_title, lines)
+            return Lyrics.static(song_id, song.name, lines)
 
     def has_artist_url(self, artist: Artist) -> bool:
         if artist.has_genie_url:
@@ -197,3 +205,13 @@ class Genie(Provider):
         result = sorted(result, key=lambda x: x.track)
 
         return result
+
+    @staticmethod
+    def fetch_genie_stream_info(song_id: int) -> dict | None:
+        try:
+            return httpx.get(
+                GENIE_STREAM_INFO_API_URL.format(song_id=song_id),
+                headers={'User-Agent': CURL_USER_AGENT},
+            ).json()
+        except JSONDecodeError:
+            return None

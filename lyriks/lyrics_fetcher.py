@@ -70,7 +70,11 @@ def main(
 
 
 def fetch_single_song(provider: Provider, song_id: int, output_path: str):
-    lyrics = provider.fetch_provider_song_lyrics(song_id)
+    song = provider.fetch_song_by_id(song_id)
+    if song is None:
+        print('Song not found.')
+        return
+    lyrics = provider.fetch_provider_song_lyrics(song)
     if lyrics is None:
         print('Failed to fetch lyrics.')
         return

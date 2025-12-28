@@ -4,6 +4,13 @@ from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release, Artist
 
 
+class Song(ABC):
+    """
+    Represents a song in a provider-specific context.
+    """
+    pass
+
+
 class Provider(ABC):
     """
     Abstract base class for lyrics providers.
@@ -24,15 +31,22 @@ class Provider(ABC):
         """
         Fetch lyrics for a track, identified by its recording MBID and the release it appears on.
 
-        Typically, this resolves the provider-specific song id and then
+        Typically, this resolves the provider-specific song entity and then
         delegates to fetch_provider_song_lyrics to fetch the lyrics.
         """
         pass
 
     @abstractmethod
-    def fetch_provider_song_lyrics(self, song_id) -> Lyrics | None:
+    def fetch_song_by_id(self, song_id: int | str) -> Song | None:
         """
-        Fetch lyrics for a song, identified by song_id. Its format may be provider-specific.
+        Fetch a provider-specific song entity by its ID.
+        """
+        pass
+
+    @abstractmethod
+    def fetch_provider_song_lyrics(self, song: Song) -> Lyrics | None:
+        """
+        Fetch lyrics for a given song entity. Its content may be provider-specific.
         """
         pass
 
