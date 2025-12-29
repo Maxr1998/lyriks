@@ -5,19 +5,25 @@ description = "A command line tool to fetch lyrics from Genie"
 authors = [
     { name = "Maxr1998", email = "max@maxr1998.de" },
 ]
-license = { text = "GPLv3" }
+license = "GPL-3.0-or-later"
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "mutagen>=1.45",
     "click>=8.0.0",
     "httpx[http2]>=0.22.0",
+    "mutagen>=1.45",
 ]
+scripts = { "lyriks" = "lyriks:cli" }
 
-[project.scripts]
-lyriks = "lyriks:cli"
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "preserve"
