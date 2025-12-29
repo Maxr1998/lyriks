@@ -5,8 +5,9 @@ from lyriks.mb_client import Release, get_releases_by_release_group
 T = TypeVar('T')
 
 
-def pick_release_from_release_group(release: Release,
-                                    selector: Callable[[Release], T | None]) -> tuple[Release, T] | None:
+def pick_release_from_release_group(
+    release: Release, selector: Callable[[Release], T | None]
+) -> tuple[Release, T] | None:
     """
     Pick a release from the release's release group that matches the given selector.
 

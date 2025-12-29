@@ -14,7 +14,7 @@ class DefaultGroup(Group):
         super().__init__(*args, **kwargs)
 
     def resolve_command(
-            self, ctx: Context, args: t.List[str]
+        self, ctx: Context, args: t.List[str]
     ) -> t.Tuple[t.Optional[str], t.Optional[Command], t.List[str]]:
         cmd_name = make_str(args[0])
 

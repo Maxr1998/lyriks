@@ -167,8 +167,7 @@ class Genie(Provider):
 
     @staticmethod
     def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
-        response = httpx.get(GENIE_ALBUM_API_URL.format(album_id=album_id),
-                             headers={'User-Agent': CURL_USER_AGENT})
+        response = httpx.get(GENIE_ALBUM_API_URL.format(album_id=album_id), headers={'User-Agent': CURL_USER_AGENT})
         try:
             response_json = response.json()
         except JSONDecodeError:

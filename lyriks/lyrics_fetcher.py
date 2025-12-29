@@ -26,14 +26,14 @@ EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
 
 
 def main(
-        provider: Provider,
-        check_artist: bool,
-        dry_run: bool,
-        upgrade: bool,
-        force: bool,
-        skip_instrumentals: bool,
-        report_path: Path | None,
-        collection_path: Path,
+    provider: Provider,
+    check_artist: bool,
+    dry_run: bool,
+    upgrade: bool,
+    force: bool,
+    skip_instrumentals: bool,
+    report_path: Path | None,
+    collection_path: Path,
 ):
     # Validate collection path
     if not collection_path.is_dir():
@@ -87,13 +87,15 @@ def fetch_single_song(provider: Provider, song_id: int, output_path: str):
 
 
 class LyricsFetcher:
-    def __init__(self,
-                 provider: Provider,
-                 check_artist: bool = False,
-                 dry_run: bool = False,
-                 upgrade: bool = False,
-                 force: bool = False,
-                 skip_inst: bool = False):
+    def __init__(
+        self,
+        provider: Provider,
+        check_artist: bool = False,
+        dry_run: bool = False,
+        upgrade: bool = False,
+        force: bool = False,
+        skip_inst: bool = False,
+    ):
         self.provider = provider
         self.check_artist = check_artist
         self.dry_run = dry_run
@@ -130,8 +132,13 @@ class LyricsFetcher:
             return
 
         tags = file.tags
-        if (TITLE_TAG not in tags or ALBUM_TAG not in tags or TRACKNUMBER_TAG not in tags or
-                MB_RGID_TAG not in tags or MB_RTID_TAG not in tags):
+        if (
+            TITLE_TAG not in tags
+            or ALBUM_TAG not in tags
+            or TRACKNUMBER_TAG not in tags
+            or MB_RGID_TAG not in tags
+            or MB_RTID_TAG not in tags
+        ):
             return
 
         title = tags[TITLE_TAG][0] or 'Unknown title'

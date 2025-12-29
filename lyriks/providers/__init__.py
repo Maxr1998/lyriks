@@ -8,6 +8,7 @@ class Song(ABC):
     """
     Represents a song in a provider-specific context.
     """
+
     pass
 
 

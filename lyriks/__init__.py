@@ -30,50 +30,72 @@ def get_provider() -> Provider:
 
 @cli.command()
 @click.option(
-    '-a', '--check-artist', is_flag=True,
+    '-a',
+    '--check-artist',
+    is_flag=True,
     help='ensure artist has a Genie URL when processing albums',
 )
 @click.option(
-    '-n', '--dry-run', is_flag=True,
+    '-n',
+    '--dry-run',
+    is_flag=True,
     help='fetch lyrics without writing them to files',
 )
 @click.option(
-    '-u', '--upgrade', is_flag=True,
+    '-u',
+    '--upgrade',
+    is_flag=True,
     help='upgrade existing static lyrics to synced lyrics if possible',
 )
 @click.option(
-    '-f', '--force', is_flag=True,
-    help='force fetching lyrics for all tracks, even if they already have them'
-         ' - THIS WILL OVERWRITE EXISTING LYRICS FILES!',
+    '-f',
+    '--force',
+    is_flag=True,
+    help=(
+        'force fetching lyrics for all tracks, even if they already have them'
+        ' - THIS WILL OVERWRITE EXISTING LYRICS FILES!'
+    ),
 )
 @click.option(
-    '-I', '--skip-instrumentals', is_flag=True,
+    '-I',
+    '--skip-instrumentals',
+    is_flag=True,
     help='skip instrumental tracks',
 )
 @click.option(
-    '-R', '--report', 'report_path', is_flag=False, flag_value='report.html', type=click.Path(),
-    help='write a HTML report of releases missing album URLs to a file at PATH'
-         ' (default: report.html in the current directory)',
+    '-R',
+    '--report',
+    'report_path',
+    is_flag=False,
+    flag_value='report.html',
+    type=click.Path(),
+    help=(
+        'write a HTML report of releases missing album URLs to a file at PATH'
+        ' (default: report.html in the current directory)'
+    ),
 )
 @click.argument('collection_path', type=click.Path(exists=True))
 @click.version_option(
-    VERSION, '-v', '--version',
+    VERSION,
+    '-v',
+    '--version',
     prog_name=PROGNAME,
     message='%(prog)s %(version)s',
     help='show the version and exit',
 )
 @click.help_option(
-    '-h', '--help',
+    '-h',
+    '--help',
     help='show this message and exit',
 )
 def sync(
-        check_artist: bool,
-        dry_run: bool,
-        upgrade: bool,
-        force: bool,
-        skip_instrumentals: bool,
-        report_path: str,
-        collection_path: str,
+    check_artist: bool,
+    dry_run: bool,
+    upgrade: bool,
+    force: bool,
+    skip_instrumentals: bool,
+    report_path: str,
+    collection_path: str,
 ):
     """
     A command line tool that fetches lyrics from Genie.
@@ -86,12 +108,16 @@ def sync(
 
 @cli.command()
 @click.option(
-    '-o', '--output', 'output_path', type=click.Path(),
+    '-o',
+    '--output',
+    'output_path',
+    type=click.Path(),
     help='write the lyrics to PATH (default: <song title>.<ext> in the current directory)',
 )
 @click.argument('song_id', type=int)
 @click.help_option(
-    '-h', '--help',
+    '-h',
+    '--help',
     help='show this message and exit',
 )
 def fetch(song_id: int, output_path: str):
