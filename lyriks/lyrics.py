@@ -17,16 +17,12 @@ class Lyrics:
         with open(path, 'w', encoding='utf-8', opener=opener) as f:
             f.writelines(self.lines)
 
-    @staticmethod
-    def synced(song_id, song_title: str, lyrics_dict: dict[int, str]) -> 'Lyrics':
+    @classmethod
+    def from_dict(cls, song_id: int, song_title: str, lyrics_dict: dict[int, str]) -> 'Lyrics':
         """
         Constructs a synced lyrics object from a dict of timestamps/lines.
         """
-        return Lyrics(song_id, song_title, _convert_to_lrc(lyrics_dict), is_synced=True)
-
-    @staticmethod
-    def static(song_id, song_title: str, lyrics: list[str]) -> 'Lyrics':
-        return Lyrics(song_id, song_title, [line + '\n' for line in lyrics], is_synced=False)
+        return cls(song_id=song_id, song_title=song_title, lines=_convert_to_lrc(lyrics_dict), is_synced=True)
 
 
 def _convert_to_lrc(lyrics_dict: dict[int, str]) -> list[str]:

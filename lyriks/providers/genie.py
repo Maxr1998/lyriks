@@ -83,7 +83,7 @@ class Genie(Provider):
             # Convert timestamps and cleanup lines
             lyrics_dict: dict[int, str] = {int(timestamp): line.strip() for timestamp, line in raw_lyrics.items()}
 
-            return Lyrics.synced(song_id, song.name, lyrics_dict)
+            return Lyrics.from_dict(song_id, song.name, lyrics_dict)
         else:
             # Fall back to static lyrics
             try:
@@ -101,7 +101,7 @@ class Genie(Provider):
             if '이 곡은 연주곡 입니다.' in lines:
                 return None
 
-            return Lyrics.static(song_id, song.name, lines)
+            return Lyrics(song_id=song_id, song_title=song.name, lines=lines, is_synced=False)
 
     def has_artist_url(self, artist: Artist) -> bool:
         if artist.has_genie_url:
