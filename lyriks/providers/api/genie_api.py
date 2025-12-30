@@ -4,6 +4,7 @@ from json.decoder import JSONDecodeError
 from urllib.parse import unquote
 
 import httpx
+from httpx import RequestError
 
 from lyriks.lyrics import Lyrics
 from lyriks.providers import Song
@@ -21,14 +22,16 @@ class GenieSong(Song):
 
 
 def get_album_songs(album_id: int) -> list[GenieSong] | None:
-    response = httpx.get(GENIE_ALBUM_API_URL.format(album_id=album_id), headers={'User-Agent': CURL_USER_AGENT})
     try:
-        response_json = response.json()
-    except JSONDecodeError:
+        response = httpx.get(
+            GENIE_ALBUM_API_URL.format(album_id=album_id),
+            headers={'User-Agent': CURL_USER_AGENT},
+        ).json()
+    except RequestError | JSONDecodeError:
         return None
 
     try:
-        songs = list(response_json['DATA1']['DATA'])
+        songs = list(response['DATA1']['DATA'])
     except KeyError:
         return None
 
@@ -62,26 +65,36 @@ def get_album_songs(album_id: int) -> list[GenieSong] | None:
 
 def get_stream_info(song_id: int) -> dict | None:
     try:
-        return httpx.get(
+        response = httpx.get(
             GENIE_STREAM_INFO_API_URL.format(song_id=song_id),
             headers={'User-Agent': CURL_USER_AGENT},
         ).json()
-    except JSONDecodeError:
+    except RequestError | JSONDecodeError:
         return None
+
+    try:
+        stream_info = response['DataSet']['DATA'][0]
+    except KeyError:
+        return None
+
+    return stream_info
 
 
 def get_song_lyrics(song: GenieSong) -> Lyrics | None:
     # Try to fetch synced lyrics
-    lyrics_response = httpx.get(
-        GENIE_LYRICS_API_URL.format(song_id=song.id),
-        headers={'User-Agent': CURL_USER_AGENT},
-    ).text
+    try:
+        response = httpx.get(
+            GENIE_LYRICS_API_URL.format(song_id=song.id),
+            headers={'User-Agent': CURL_USER_AGENT},
+        ).text
+    except RequestError:
+        return None
 
-    if lyrics_response.startswith('GenieCallback('):
+    if response is not None and response.startswith('GenieCallback('):
         # We (probably) got synced lyrics
-        lyrics_response = lyrics_response.removeprefix('GenieCallback(').removesuffix(');')
+        response = response.removeprefix('GenieCallback(').removesuffix(');')
         try:
-            raw_lyrics = json.loads(lyrics_response)
+            raw_lyrics = json.loads(response)
         except JSONDecodeError:
             return None
 
@@ -96,7 +109,7 @@ def get_song_lyrics(song: GenieSong) -> Lyrics | None:
             return None
 
         try:
-            raw_lyrics = stream_info['DataSet']['DATA'][0]['LYRICS']
+            raw_lyrics = stream_info['LYRICS']
         except KeyError:
             return None
 

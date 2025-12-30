@@ -9,6 +9,7 @@ from json import JSONDecodeError
 import httpx
 import lxml.etree as xml
 import pyqqmusicdes
+from httpx import RequestError
 from lxml.etree import XMLParser
 
 from lyriks.lib.zzc_sign import zzc_sign
@@ -49,11 +50,14 @@ class QQMSong(Song):
 
     @classmethod
     def from_song_info(cls, song_info: dict) -> 'QQMSong':
-        song_id = song_info['id']
-        song_mid = song_info['mid']
-        album_index = song_info['index_album']
-        title = song_info['title']
-        artists = [artist['name'] for artist in song_info.get('singer', [])]
+        try:
+            song_id = song_info['id']
+            song_mid = song_info['mid']
+            album_index = song_info['index_album']
+            title = song_info['title']
+            artists = [artist['name'] for artist in song_info['singer']]
+        except KeyError:
+            raise ValueError("Invalid song info data")
 
         return cls(id=song_id, mid=song_mid, album_index=album_index, title=title, artists=artists)
 
@@ -63,33 +67,32 @@ def _qqm_request(modules: list[dict]) -> list[dict]:
     body = json.dumps(request)
     signature = zzc_sign(body)
 
-    response = httpx.post(
-        QQM_API_URL,
-        params={
-            "_": int(datetime.now().timestamp() * 1000),
-            "sign": signature,
-        },
-        headers={
-            "Accept": "application/json",
-            "Accept-Language": "en-DE,en;q=1",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Origin": "https://y.qq.com",
-            "Referer": "https://y.qq.com/",
-            "User-Agent": CHROME_USER_AGENT,
-        },
-        content=body,
-    )
-
     try:
-        response_json = response.json()
-    except JSONDecodeError:
-        print("Error: could not decode QQ Music response")
+        response = httpx.post(
+            QQM_API_URL,
+            params={
+                "_": int(datetime.now().timestamp() * 1000),
+                "sign": signature,
+            },
+            headers={
+                "Accept": "application/json",
+                "Accept-Language": "en-DE,en;q=1",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Origin": "https://y.qq.com",
+                "Referer": "https://y.qq.com/",
+                "User-Agent": CHROME_USER_AGENT,
+            },
+            content=body,
+        ).json()
+    except RequestError | JSONDecodeError:
         return []
 
     try:
-        return [response_json[f'req_{i + 1}'] for i in range(len(modules))]
+        response_modules = [response[f'req_{i + 1}'] for i in range(len(modules))]
     except KeyError:
         return []
+
+    return response_modules
 
 
 def get_album_songs(album_mid: str) -> list[QQMSong]:
@@ -106,16 +109,15 @@ def get_album_songs(album_mid: str) -> list[QQMSong]:
     if not response:
         return []
 
-    songs = response[0]['data']['songList']
+    try:
+        song_infos = [song['songInfo'] for song in response[0]['data']['songList']]
+    except IndexError | KeyError:
+        return []
 
-    result = []
-
-    for song in songs:
-        song_info = song['songInfo']
-        song = QQMSong.from_song_info(song_info)
-        result.append(song)
-
-    return result
+    try:
+        return [QQMSong.from_song_info(song_info) for song_info in song_infos]
+    except ValueError:
+        return []
 
 
 def get_song_info(song_id: int) -> QQMSong | None:
@@ -134,7 +136,7 @@ def get_song_info(song_id: int) -> QQMSong | None:
 
     try:
         song_info = response[0]['data']['tracks'][0]
-    except (KeyError, IndexError):
+    except IndexError | KeyError:
         return None
 
     return QQMSong.from_song_info(song_info)
@@ -148,22 +150,25 @@ def get_song_lyrics(song: QQMSong) -> Lyrics | None:
         "musicid": song.id,
     }
 
-    response = httpx.post(
-        QQM_LYRICS_API_URL,
-        headers={
-            "Accept": "application/xml",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Referer": "https://c.y.qq.com/",
-            "User-Agent": CHROME_USER_AGENT,
-        },
-        data=request,
-    )
+    try:
+        response = httpx.post(
+            QQM_LYRICS_API_URL,
+            headers={
+                "Accept": "application/xml",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Referer": "https://c.y.qq.com/",
+                "User-Agent": CHROME_USER_AGENT,
+            },
+            data=request,
+        ).text
+    except RequestError:
+        return None
 
-    if not response:
+    if response is None:
         return None
 
     # Remove surrounding comment tags
-    response_text = response.text.replace("<!--", "").replace("-->", "")
+    response_text = response.replace("<!--", "").replace("-->", "")
 
     # Parse main XML response
     root = xml.fromstring(response_text)

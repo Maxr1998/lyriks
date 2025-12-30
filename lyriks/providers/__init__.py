@@ -129,7 +129,7 @@ class Provider(ABC):
                     # Match song by track number if possible
                     track_number = int(track['number'])
                     song = next(song for song in provider_songs if song.album_index == track_number)
-                except (ValueError, StopIteration):
+                except ValueError | StopIteration:
                     # Fall back to track position
                     track_index = track['position'] - 1
                     if track_index >= len(provider_songs):
