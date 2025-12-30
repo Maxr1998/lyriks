@@ -3,8 +3,10 @@ from lyriks.mb_client import Release, Artist
 from . import Provider
 from .api import genie_api
 from .api.genie_api import GenieSong
+from .registry import register_provider
 
 
+@register_provider('genie')
 class Genie(Provider):
     """
     Provider for Genie Music.

@@ -5,8 +5,9 @@ import click
 from .const import PROGNAME, VERSION
 from .default_group import DefaultGroup
 from .lyrics_fetcher import main, fetch_single_song
+from .provider_choice import ProviderChoice
 from .providers import Provider
-from .providers.genie import Genie
+from .providers.genie import Genie as Genie
 from .util import fix_synced_lyrics
 
 
@@ -22,10 +23,6 @@ from .util import fix_synced_lyrics
 )
 def cli():
     pass
-
-
-def get_provider() -> Provider:
-    return Genie()  # hardcoded until configuration logic is implemented
 
 
 @cli.command()
@@ -74,6 +71,13 @@ def get_provider() -> Provider:
         ' (default: report.html in the current directory)'
     ),
 )
+@click.option(
+    '-P',
+    '--provider',
+    type=ProviderChoice(),
+    default='genie',
+    help='the lyrics provider to use (default: genie)',
+)
 @click.argument('collection_path', type=click.Path(exists=True))
 @click.version_option(
     VERSION,
@@ -95,18 +99,25 @@ def sync(
     force: bool,
     skip_instrumentals: bool,
     report_path: str,
+    provider: Provider,
     collection_path: str,
 ):
     """
     A command line tool that fetches lyrics from Genie.
     """
-    provider = get_provider()
     report_path = Path(report_path) if report_path else None
     collection_path = Path(collection_path)
     main(provider, check_artist, dry_run, upgrade, force, skip_instrumentals, report_path, collection_path)
 
 
 @cli.command()
+@click.option(
+    '-P',
+    '--provider',
+    type=ProviderChoice(),
+    default='genie',
+    help='the lyrics provider to use (default: genie)',
+)
 @click.option(
     '-o',
     '--output',
@@ -120,13 +131,12 @@ def sync(
     '--help',
     help='show this message and exit',
 )
-def fetch(song_id: int, output_path: str):
+def fetch(provider: Provider, output_path: str, song_id: int):
     """
     Fetch lyrics for a single song from Genie.
 
     The song ID can be found in the URL of the song's Genie page.
     """
-    provider = get_provider()
     fetch_single_song(provider, song_id, output_path)
 
 
