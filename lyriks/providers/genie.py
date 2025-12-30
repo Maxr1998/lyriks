@@ -53,7 +53,7 @@ class Genie(Provider):
         except KeyError:
             return None
 
-        genie_songs = self.fetch_genie_album_song_ids(album_id)
+        genie_songs = self.fetch_genie_album_songs(album_id)
         if not genie_songs:
             return None
 
@@ -128,45 +128,45 @@ class Genie(Provider):
             self.cache[track_release.id] = None
             self.missing_releases[track_release.id] = track_release
             return None
-        genie_release, album_id = result
+        matched_release, album_id = result
 
-        genie_song_ids = self.fetch_genie_album_song_ids(album_id)
-        if not genie_song_ids:
+        genie_songs = self.fetch_genie_album_songs(album_id)
+        if not genie_songs:
             self.cache[track_release.id] = None
             return None
 
         # Ensure track count matches
-        if len(genie_song_ids) != genie_release.get_track_count():
+        if len(genie_songs) != matched_release.get_track_count():
             print(f'\rTrack count mismatch for release {track_release.title} [{track_release.id}]')
             self.cache[track_release.id] = None
             return None
 
         # Match recordings to Genie songs
-        genie_songs = {}
+        mapped_songs = {}
 
         # Iterate over all tracks in the release
-        for medium in genie_release.media:
+        for medium in matched_release.media:
             for track in medium['tracks']:
                 recording_mbid: str = track['recording']['id']
                 try:
                     # Match song by track number if possible
                     track_number = int(track['number'])
-                    song = next(song for song in genie_song_ids if song.track == track_number)
+                    song = next(song for song in genie_songs if song.track == track_number)
                 except (ValueError, StopIteration):
                     # Fall back to track position
                     track_index = track['position'] - 1
-                    if track_index >= len(genie_song_ids):
+                    if track_index >= len(genie_songs):
                         continue
-                    song = genie_song_ids[track_index]
+                    song = genie_songs[track_index]
 
-                genie_songs[recording_mbid] = song
+                mapped_songs[recording_mbid] = song
 
-        self.cache[track_release.id] = genie_songs
+        self.cache[track_release.id] = mapped_songs
 
-        return genie_songs
+        return mapped_songs
 
     @staticmethod
-    def fetch_genie_album_song_ids(album_id: int) -> list[GenieSong] | None:
+    def fetch_genie_album_songs(album_id: int) -> list[GenieSong] | None:
         response = httpx.get(GENIE_ALBUM_API_URL.format(album_id=album_id), headers={'User-Agent': CURL_USER_AGENT})
         try:
             response_json = response.json()
