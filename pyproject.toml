@@ -15,7 +15,9 @@ requires-python = ">=3.10"
 dependencies = [
     "click>=8.0.0",
     "httpx[http2]>=0.22.0",
+    "lxml>=6.0.2",
     "mutagen>=1.45",
+    "pyqqmusicdes>=0.1.0",
 ]
 scripts = { "lyriks" = "lyriks:cli" }
 

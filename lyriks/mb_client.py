@@ -33,6 +33,7 @@ class Artist:
             if relation.get('target-type') == 'url'
         }
         self.has_genie_url: bool = any('genie.co.kr' in url for url in self.urls)
+        self.has_qqm_url: bool = any('y.qq.com' in url for url in self.urls)
 
 
 class Release:
@@ -64,6 +65,17 @@ class Release:
                 except ValueError:
                     print(f"Invalid album ID: {album_id}")
                     return None
+        return None
+
+    def get_qqm_album_mid(self) -> str | None:
+        relations = self.data['relations']
+        for relation in relations:
+            if relation.get('target-type') != 'url' or relation.get('ended'):
+                continue
+            url = relation['url']['resource']
+            match = re.fullmatch(r'https://y.qq.com/n/ryqq/albumDetail/(\w+)', url)
+            if match:
+                return match.group(1)
         return None
 
 
