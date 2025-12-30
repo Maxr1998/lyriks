@@ -1,15 +1,19 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release, Artist
 
 
+@dataclass
 class Song(ABC):
     """
     Represents a song in a provider-specific context.
     """
 
-    pass
+    id: int
+    album_index: int
+    title: str
 
 
 class Provider(ABC):

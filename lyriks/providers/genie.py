@@ -19,9 +19,7 @@ CURL_USER_AGENT = 'curl/8.7.1'  # for whatever reason, this works, but the pytho
 
 @dataclass
 class GenieSong(Song):
-    id: int
-    track: int
-    name: str
+    pass
 
 
 class Genie(Provider):
@@ -83,7 +81,7 @@ class Genie(Provider):
             # Convert timestamps and cleanup lines
             lyrics_dict: dict[int, str] = {int(timestamp): line.strip() for timestamp, line in raw_lyrics.items()}
 
-            return Lyrics.from_dict(song_id, song.name, lyrics_dict)
+            return Lyrics.from_dict(song_id, song.title, lyrics_dict)
         else:
             # Fall back to static lyrics
             try:
@@ -101,7 +99,7 @@ class Genie(Provider):
             if '이 곡은 연주곡 입니다.' in lines:
                 return None
 
-            return Lyrics(song_id=song_id, song_title=song.name, lines=lines, is_synced=False)
+            return Lyrics(song_id=song_id, song_title=song.title, lines=lines, is_synced=False)
 
     def has_artist_url(self, artist: Artist) -> bool:
         if artist.has_genie_url:
@@ -151,7 +149,7 @@ class Genie(Provider):
                 try:
                     # Match song by track number if possible
                     track_number = int(track['number'])
-                    song = next(song for song in genie_songs if song.track == track_number)
+                    song = next(song for song in genie_songs if song.album_index == track_number)
                 except (ValueError, StopIteration):
                     # Fall back to track position
                     track_index = track['position'] - 1
@@ -199,9 +197,9 @@ class Genie(Provider):
             except ValueError:
                 return None
 
-            result.append(GenieSong(id=song_id, track=track_num, name=unquote(song_name)))
+            result.append(GenieSong(id=song_id, album_index=track_num, title=unquote(song_name)))
 
-        result = sorted(result, key=lambda x: x.track)
+        result = sorted(result, key=lambda x: x.album_index)
 
         return result
 
