@@ -36,5 +36,6 @@ class QQMusic(Provider):
     def fetch_provider_song_lyrics(self, song: QQMSong) -> Lyrics | None:
         return qqm_api.get_song_lyrics(song)
 
+    @property
     def provider_domain(self) -> str:
         return 'y.qq.com'

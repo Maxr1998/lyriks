@@ -61,6 +61,7 @@ class Provider(ABC):
         """
         pass
 
+    @property
     @abstractmethod
     def provider_domain(self) -> str:
         """
@@ -74,7 +75,7 @@ class Provider(ABC):
         :return: True if we're unable to check or if this artist has a URL, False otherwise.
         """
 
-        domain = self.provider_domain()
+        domain = self.provider_domain
         if any(domain in url for url in artist.urls):
             return True
 

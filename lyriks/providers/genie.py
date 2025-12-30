@@ -49,5 +49,6 @@ class Genie(Provider):
     def fetch_provider_song_lyrics(self, song: GenieSong) -> Lyrics | None:
         return genie_api.get_song_lyrics(song)
 
+    @property
     def provider_domain(self) -> str:
         return 'genie.co.kr'
