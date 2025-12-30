@@ -15,6 +15,7 @@ from lxml.etree import XMLParser
 from lyriks.lib.zzc_sign import zzc_sign
 from lyriks.lyrics import Lyrics
 from lyriks.providers import Song
+from lyriks.util import format_lrc_timestamp
 
 xml.set_default_parser(XMLParser(no_network=True, recover=True, remove_blank_text=True))
 
@@ -245,7 +246,7 @@ def _convert_qrc_to_lrc(lines: list[str]) -> list[str] | None:
             return None
 
         line_start = int(line_timestamp_match.group(1))
-        lrc_line_timestamp = f'[{_format_lrc_timestamp(line_start)}]'
+        lrc_line_timestamp = f'[{format_lrc_timestamp(line_start)}]'
 
         line_content_start = line_timestamp_match.end()
         line_content = line[line_content_start:]
@@ -255,15 +256,8 @@ def _convert_qrc_to_lrc(lines: list[str]) -> list[str] | None:
         for word, start_str, duration_str in timed_words:
             start = int(start_str)
             end = start + int(duration_str)
-            lrc_line += f'<{_format_lrc_timestamp(start)}>{word}<{_format_lrc_timestamp(end)}>'
+            lrc_line += f'<{format_lrc_timestamp(start)}>{word}<{format_lrc_timestamp(end)}>'
 
         lrc_lines.append(f'{lrc_line_timestamp}{lrc_line}\n')
 
     return lrc_lines
-
-
-def _format_lrc_timestamp(millis: int) -> str:
-    minutes = millis // 60000
-    seconds = (millis % 60000) // 1000
-    centis = (millis % 1000) // 10
-    return f'{minutes:02d}:{seconds:02d}.{centis:02d}'

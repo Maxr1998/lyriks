@@ -37,3 +37,13 @@ def fix_synced_lyrics_file(dirname: str, filename: str, timestamp_pattern: re.Pa
     print(f'Fixing synced lyrics format for "{filename}"')
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(new_content)
+
+
+def format_lrc_timestamp(millis: int) -> str:
+    """
+    Format a given milliseconds value into the LRC timestamp format (MM:SS.cc).
+    """
+    minutes = millis // 60000
+    seconds = (millis % 60000) // 1000
+    centis = (millis % 1000) // 10
+    return f'{minutes:02d}:{seconds:02d}.{centis:02d}'
