@@ -1,6 +1,7 @@
 import re
 import time
 from json.decoder import JSONDecodeError
+from typing import AnyStr
 
 import httpx
 
@@ -49,32 +50,38 @@ class Release:
     def get_track_map(self) -> list[dict[str, dict]]:
         return [{track['id']: track for track in medium['tracks']} for medium in self.media]
 
-    def get_genie_album_id(self) -> int | None:
-        relations = self.data['relations']
-        for relation in relations:
-            if relation.get('target-type') != 'url' or relation.get('ended'):
-                continue
-            url = relation['url']['resource']
-            match = re.fullmatch(r'https://(?:www.)?genie.co.kr/detail/albumInfo\?axnm=(\d+).*', url)
-            if match:
-                album_id = match.group(1)
-                try:
-                    return int(album_id)
-                except ValueError:
-                    print(f"Invalid album ID: {album_id}")
-                    return None
-        return None
+    def extract_url_str(self, pattern: AnyStr) -> str | None:
+        """
+        Extracts an ID from the release's URL relations using the provided RegEx pattern.
+        The pattern must contain exactly one capturing group for the ID.
+        """
+        pattern_obj = re.compile(pattern)
+        if pattern_obj.groups != 1:
+            raise ValueError("Pattern must contain exactly one capturing group: %r" % pattern)
 
-    def get_qqm_album_mid(self) -> str | None:
         relations = self.data['relations']
         for relation in relations:
             if relation.get('target-type') != 'url' or relation.get('ended'):
                 continue
             url = relation['url']['resource']
-            match = re.fullmatch(r'https://y.qq.com/n/ryqq/albumDetail/(\w+)', url)
+            match = pattern_obj.fullmatch(url)
             if match:
                 return match.group(1)
         return None
+
+    def extract_url_id(self, pattern: AnyStr) -> int | None:
+        """
+        Extracts an integer ID from the release's URL relations using the provided RegEx pattern.
+        The pattern must contain exactly one capturing group for the ID.
+        """
+        id_str = self.extract_url_str(pattern)
+        if id_str is None:
+            return None
+
+        try:
+            return int(id_str)
+        except ValueError:
+            return None
 
 
 def get_artist(artist_mbid: str) -> Artist | None:

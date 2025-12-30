@@ -16,7 +16,7 @@ class Genie(Provider):
         # Resolve Genie album
         genie_songs = self.get_mapped_provider_songs(
             track_release,
-            lambda r: r.get_genie_album_id(),
+            lambda r: r.extract_url_id(r'https://(?:www.)?genie.co.kr/detail/albumInfo\?axnm=(\d+).*'),
             genie_api.get_album_songs,
         )
         if not genie_songs:
