@@ -62,12 +62,27 @@ class Provider(ABC):
         pass
 
     @abstractmethod
+    def provider_domain(self) -> str:
+        """
+        Get the primary domain of the provider.
+        """
+        pass
+
     def has_artist_url(self, artist: Artist) -> bool:
         """
         Check if the artist has a URL relationship for the service used by this provider.
         :return: True if we're unable to check or if this artist has a URL, False otherwise.
         """
-        pass
+
+        domain = self.provider_domain()
+        if any(domain in url for url in artist.urls):
+            return True
+
+        if artist.id not in self.missing_artists:
+            print(f'\rNo {domain} URL found for artist {artist.name} [{artist.id}]')
+            self.missing_artists[artist.id] = artist
+
+        return False
 
     def get_mapped_provider_songs(
         self, track_release: Release, selector: Callable[[Release], T | None], fetcher: Callable[[T], list[S] | None]

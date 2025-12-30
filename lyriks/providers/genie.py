@@ -1,5 +1,5 @@
 from lyriks.lyrics import Lyrics
-from lyriks.mb_client import Release, Artist
+from lyriks.mb_client import Release
 from . import Provider
 from .api import genie_api
 from .api.genie_api import GenieSong
@@ -49,12 +49,5 @@ class Genie(Provider):
     def fetch_provider_song_lyrics(self, song: GenieSong) -> Lyrics | None:
         return genie_api.get_song_lyrics(song)
 
-    def has_artist_url(self, artist: Artist) -> bool:
-        if artist.has_genie_url:
-            return True
-
-        if artist.id not in self.missing_artists:
-            print(f'\rNo Genie URL found for artist {artist.name} [{artist.id}]')
-            self.missing_artists[artist.id] = artist
-
-        return False
+    def provider_domain(self) -> str:
+        return 'genie.co.kr'

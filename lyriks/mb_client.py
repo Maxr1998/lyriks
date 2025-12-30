@@ -32,8 +32,6 @@ class Artist:
             for relation in data.get('relations', [])
             if relation.get('target-type') == 'url'
         }
-        self.has_genie_url: bool = any('genie.co.kr' in url for url in self.urls)
-        self.has_qqm_url: bool = any('y.qq.com' in url for url in self.urls)
 
 
 class Release:
