@@ -9,6 +9,7 @@ from .provider_choice import ProviderChoice
 from .providers import Provider
 from .providers.genie import Genie as Genie
 from .providers.qqm import QQMusic as QQMusic
+from .providers.vibe import Vibe as Vibe
 from .util import fix_synced_lyrics
 
 
