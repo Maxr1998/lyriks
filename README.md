@@ -14,7 +14,7 @@ To install it from source instead, clone the repository and build the wheel befo
 
 ```bash
 uv build
-pip install dist/lyriks-0.5.1-py3-none-any.whl
+pip install dist/lyriks-0.5.2-py3-none-any.whl
 ```
 
 You can also run the script directly from within the repository:
