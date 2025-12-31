@@ -13,7 +13,7 @@ pip install lyriks
 To install it from source instead, clone the repository and build the wheel before installing it with pip:
 
 ```bash
-python -m build --wheel
+uv build
 pip install dist/lyriks-0.5.1-py3-none-any.whl
 ```
 
@@ -23,7 +23,7 @@ You can also run the script directly from within the repository:
 `./lyriks.py /path/to/music/folder`
 ```
 
-Make sure to first install the required dependencies from `pyproject.toml`.
+Make sure to first install the required dependencies from `pyproject.toml` (i.e. `uv sync`).
 
 ### Usage
 
