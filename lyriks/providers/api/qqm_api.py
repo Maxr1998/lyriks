@@ -182,6 +182,8 @@ def get_song_lyrics(song: QQMSong) -> Lyrics | None:
         return None
 
     content_text = _decrypt_content_node(content_node)
+    if content_text is None:
+        return None
 
     # The XML is malformed (unescaped quotes inside attribute) and contains newlines.
     # Thus, as standard XML parsers would fail, we use a regex to extract the content.
