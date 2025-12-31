@@ -3,7 +3,7 @@ import time
 from json.decoder import JSONDecodeError
 from typing import AnyStr
 
-import httpx
+from httpx import Client as HttpClient
 from httpx import RequestError
 from stamina import retry
 
@@ -87,12 +87,12 @@ class Release:
 
 
 @retry(on=RequestError, attempts=3)
-def get_artist(artist_mbid: str) -> Artist | None:
+def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None:
     handle_rate_limit()
 
     artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
     try:
-        response = httpx.get(
+        response = http_client.get(
             artist_url,
             headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
         ).json()
@@ -108,11 +108,11 @@ def get_artist(artist_mbid: str) -> Artist | None:
 
 
 @retry(on=RequestError, attempts=3)
-def get_releases(browse_url: str) -> list[Release]:
+def get_releases(http_client: HttpClient, browse_url: str) -> list[Release]:
     handle_rate_limit()
 
     try:
-        response = httpx.get(
+        response = http_client.get(
             browse_url,
             headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
         ).json()
@@ -122,9 +122,10 @@ def get_releases(browse_url: str) -> list[Release]:
     return [Release(release) for release in response.get("releases", [])]
 
 
-def get_release_by_track(track_mbid: str) -> Release | None:
-    return next(iter(get_releases(f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}')), None)
+def get_release_by_track(http_client: HttpClient, track_mbid: str) -> Release | None:
+    releases = get_releases(http_client, f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}')
+    return next(iter(releases), None)
 
 
-def get_releases_by_release_group(rg_mbid: str) -> list[Release]:
-    return get_releases(f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}')
+def get_releases_by_release_group(http_client: HttpClient, rg_mbid: str) -> list[Release]:
+    return get_releases(http_client, f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}')

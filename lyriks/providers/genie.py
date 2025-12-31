@@ -17,7 +17,7 @@ class Genie(Provider):
         genie_songs = self.get_mapped_provider_songs(
             track_release,
             lambda r: r.extract_url_id(r'https://(?:www.)?genie.co.kr/detail/albumInfo\?axnm=(\d+).*'),
-            genie_api.get_album_songs,
+            lambda album_id: genie_api.get_album_songs(self.http_client, album_id),
         )
         if not genie_songs:
             return None
@@ -31,7 +31,7 @@ class Genie(Provider):
         return self.fetch_provider_song_lyrics(genie_song)
 
     def fetch_song_by_id(self, song_id: int) -> GenieSong | None:
-        stream_info = genie_api.get_stream_info(song_id)
+        stream_info = genie_api.get_stream_info(self.http_client, song_id)
         if stream_info is None:
             return None
 
@@ -40,14 +40,14 @@ class Genie(Provider):
         except KeyError | ValueError:
             return None
 
-        genie_songs = genie_api.get_album_songs(album_id)
+        genie_songs = genie_api.get_album_songs(self.http_client, album_id)
         if not genie_songs:
             return None
 
         return next((s for s in genie_songs if s.id == song_id), None)
 
     def fetch_provider_song_lyrics(self, song: GenieSong) -> Lyrics | None:
-        return genie_api.get_song_lyrics(song)
+        return genie_api.get_song_lyrics(self.http_client, song)
 
     @property
     def provider_domain(self) -> str:

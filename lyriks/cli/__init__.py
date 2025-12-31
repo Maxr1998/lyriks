@@ -5,7 +5,7 @@ import click
 from lyriks.const import PROGNAME, VERSION
 from lyriks.lyrics.util import fix_synced_lyrics
 from lyriks.lyrics_fetcher import main, fetch_single_song
-from lyriks.providers import Provider
+from lyriks.providers import ProviderFactory
 from .default_group import DefaultGroup
 from .provider_choice import ProviderChoice
 
@@ -73,6 +73,7 @@ def cli():
 @click.option(
     '-P',
     '--provider',
+    'provider_factory',
     type=ProviderChoice(),
     default='genie',
     help='the lyrics provider to use (default: genie)',
@@ -98,7 +99,7 @@ def sync(
     force: bool,
     skip_instrumentals: bool,
     report_path: str,
-    provider: Provider,
+    provider_factory: ProviderFactory,
     collection_path: str,
 ):
     """
@@ -106,13 +107,14 @@ def sync(
     """
     report_path = Path(report_path) if report_path else None
     collection_path = Path(collection_path)
-    main(provider, check_artist, dry_run, upgrade, force, skip_instrumentals, report_path, collection_path)
+    main(provider_factory, check_artist, dry_run, upgrade, force, skip_instrumentals, report_path, collection_path)
 
 
 @cli.command()
 @click.option(
     '-P',
     '--provider',
+    'provider_factory',
     type=ProviderChoice(),
     default='genie',
     help='the lyrics provider to use (default: genie)',
@@ -130,13 +132,13 @@ def sync(
     '--help',
     help='show this message and exit',
 )
-def fetch(provider: Provider, output_path: str, song_id: int):
+def fetch(provider_factory: ProviderFactory, output_path: str, song_id: int):
     """
     Fetch lyrics for a single song from Genie.
 
     The song ID can be found in the URL of the song's Genie page.
     """
-    fetch_single_song(provider, song_id, output_path)
+    fetch_single_song(provider_factory, song_id, output_path)
 
 
 @cli.command()

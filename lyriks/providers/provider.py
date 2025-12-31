@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Callable, Protocol
 from typing import TypeVar
+
+from httpx import Client as HttpClient
 
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release, Artist
@@ -21,7 +23,8 @@ class Provider(ABC):
     Artists and releases that don't have a URL relationship can be recorded for later reporting.
     """
 
-    def __init__(self):
+    def __init__(self, http_client: HttpClient):
+        self.http_client = http_client
         self.cache: dict[str, dict[str, object] | None] = {}
         self.missing_artists: dict[str, Artist] = {}
         self.missing_releases: dict[str, Release] = {}
@@ -75,7 +78,10 @@ class Provider(ABC):
         return False
 
     def get_mapped_provider_songs(
-        self, track_release: Release, selector: Callable[[Release], T | None], fetcher: Callable[[T], list[S] | None]
+        self,
+        track_release: Release,
+        selector: Callable[[Release], T | None],
+        fetcher: Callable[[T], list[S] | None],
     ) -> dict[str, S] | None:
         """
         Get songs for a track release, matched to its recordings.
@@ -88,7 +94,7 @@ class Provider(ABC):
         if track_release.id in self.cache:
             return self.cache[track_release.id]
 
-        result = pick_release_from_release_group(track_release, selector)
+        result = pick_release_from_release_group(self.http_client, track_release, selector)
         if not result:
             print(f'\rNo URL found for release {track_release.title} [{track_release.id}]')
             self.cache[track_release.id] = None
@@ -133,3 +139,12 @@ class Provider(ABC):
         self.cache[track_release.id] = mapped_songs
 
         return mapped_songs
+
+
+class ProviderFactory(Protocol):
+    """
+    A factory protocol for creating Provider instances.
+    Has to match the Provider constructor signature.
+    """
+
+    def __call__(self, http_client: HttpClient) -> Provider: ...

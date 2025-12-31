@@ -17,7 +17,7 @@ class QQMusic(Provider):
         qqm_songs = self.get_mapped_provider_songs(
             track_release,
             lambda r: r.extract_url_str(r'https://y.qq.com/n/ryqq(?:_v2)?/albumDetail/(\w+)'),
-            qqm_api.get_album_songs,
+            lambda album_id: qqm_api.get_album_songs(self.http_client, album_id),
         )
         if not qqm_songs:
             return None
@@ -31,10 +31,10 @@ class QQMusic(Provider):
         return self.fetch_provider_song_lyrics(qqm_song)
 
     def fetch_song_by_id(self, song_id: int) -> QQMSong | None:
-        return qqm_api.get_song_info(song_id)
+        return qqm_api.get_song_info(self.http_client, song_id)
 
     def fetch_provider_song_lyrics(self, song: QQMSong) -> Lyrics | None:
-        return qqm_api.get_song_lyrics(song)
+        return qqm_api.get_song_lyrics(self.http_client, song)
 
     @property
     def provider_domain(self) -> str:

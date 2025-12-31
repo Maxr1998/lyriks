@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from json import JSONDecodeError
 
-import httpx
 import lxml.etree as xml
 import pyqqmusicdes
+from httpx import Client as HttpClient
 from httpx import RequestError
 from lxml.etree import XMLParser
 from stamina import retry
@@ -65,13 +65,13 @@ class QQMSong(Song):
 
 
 @retry(on=RequestError, attempts=3)
-def _qqm_request(modules: list[dict]) -> list[dict]:
+def _qqm_request(http_client: HttpClient, modules: list[dict]) -> list[dict]:
     request = dict([('comm', QQM_COMM)] + [(f'req_{i + 1}', module) for i, module in enumerate(modules)])
     body = json.dumps(request)
     signature = zzc_sign(body)
 
     try:
-        response = httpx.post(
+        response = http_client.post(
             QQM_API_URL,
             params={
                 "_": int(datetime.now().timestamp() * 1000),
@@ -98,15 +98,16 @@ def _qqm_request(modules: list[dict]) -> list[dict]:
     return response_modules
 
 
-def get_album_songs(album_mid: str) -> list[QQMSong]:
+def get_album_songs(http_client: HttpClient, album_mid: str) -> list[QQMSong]:
     response = _qqm_request(
+        http_client,
         [
             {
                 'module': 'music.musichallAlbum.AlbumSongList',
                 'method': 'GetAlbumSongList',
                 'param': {'albumMid': album_mid, 'albumID': 0, 'begin': 0, 'num': 100, 'order': 2},
             }
-        ]
+        ],
     )
 
     if not response:
@@ -123,15 +124,16 @@ def get_album_songs(album_mid: str) -> list[QQMSong]:
         return []
 
 
-def get_song_info(song_id: int) -> QQMSong | None:
+def get_song_info(http_client: HttpClient, song_id: int) -> QQMSong | None:
     response = _qqm_request(
+        http_client,
         [
             {
                 "module": "music.trackInfo.UniformRuleCtrl",
                 "method": "CgiGetTrackInfo",
                 "param": {"ids": [song_id], "types": [0]},
             }
-        ]
+        ],
     )
 
     if not response:
@@ -146,7 +148,7 @@ def get_song_info(song_id: int) -> QQMSong | None:
 
 
 @retry(on=RequestError, attempts=3)
-def get_song_lyrics(song: QQMSong) -> Lyrics | None:
+def get_song_lyrics(http_client: HttpClient, song: QQMSong) -> Lyrics | None:
     request = {
         "version": "15",
         "miniversion": "82",
@@ -154,7 +156,7 @@ def get_song_lyrics(song: QQMSong) -> Lyrics | None:
         "musicid": song.id,
     }
 
-    response = httpx.post(
+    response = http_client.post(
         QQM_LYRICS_API_URL,
         headers={
             "Accept": "application/xml",

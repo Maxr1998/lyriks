@@ -17,7 +17,7 @@ class Vibe(Provider):
         vibe_songs = self.get_mapped_provider_songs(
             track_release,
             lambda r: r.extract_url_id(r'https://vibe.naver.com/album/(\d+)'),
-            vibe_api.get_album_songs,
+            lambda album_id: vibe_api.get_album_songs(self.http_client, album_id),
         )
         if not vibe_songs:
             return None
@@ -31,10 +31,10 @@ class Vibe(Provider):
         return self.fetch_provider_song_lyrics(vibe_song)
 
     def fetch_song_by_id(self, song_id: int) -> VibeSong | None:
-        return vibe_api.get_song_info(song_id)
+        return vibe_api.get_song_info(self.http_client, song_id)
 
     def fetch_provider_song_lyrics(self, song: VibeSong) -> Lyrics | None:
-        return vibe_api.get_song_lyrics(song)
+        return vibe_api.get_song_lyrics(self.http_client, song)
 
     @property
     def provider_domain(self) -> str:

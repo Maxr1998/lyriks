@@ -23,4 +23,4 @@ class ProviderChoice(Choice):
                 ctx=ctx,
             )
 
-        return provider_class()
+        return provider_class
