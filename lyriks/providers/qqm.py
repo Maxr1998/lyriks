@@ -16,7 +16,7 @@ class QQMusic(Provider):
         # Resolve album
         qqm_songs = self.get_mapped_provider_songs(
             track_release,
-            lambda r: r.extract_url_str(r'https://y.qq.com/n/ryqq/albumDetail/(\w+)'),
+            lambda r: r.extract_url_str(r'https://y.qq.com/n/ryqq(?:_v2)?/albumDetail/(\w+)'),
             qqm_api.get_album_songs,
         )
         if not qqm_songs:
