@@ -1,8 +1,8 @@
-from lyriks import Provider
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release
 from .api import vibe_api
 from .api.vibe_api import VibeSong
+from .provider import Provider
 from .registry import register_provider
 
 

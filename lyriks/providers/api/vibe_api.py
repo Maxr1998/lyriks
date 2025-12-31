@@ -6,7 +6,7 @@ from httpx import RequestError
 from stamina import retry
 
 from lyriks.lyrics import Lyrics
-from lyriks.providers import Song
+from .song import Song
 
 VIBE_LYRICS_API_URL = 'https://apis.naver.com/vibeWeb/musicapiweb/vibe/v4/lyric/{song_id:d}'
 VIBE_ALBUM_TRACKS_API_URL = 'https://apis.naver.com/vibeWeb/musicapiweb/album/{album_id:d}/tracks?start=1&display=1000'

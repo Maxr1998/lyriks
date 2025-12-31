@@ -1,8 +1,8 @@
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release
-from . import Provider
 from .api import genie_api
 from .api.genie_api import GenieSong
+from .provider import Provider
 from .registry import register_provider
 
 

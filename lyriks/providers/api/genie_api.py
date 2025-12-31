@@ -8,7 +8,7 @@ from httpx import RequestError
 from stamina import retry
 
 from lyriks.lyrics import Lyrics
-from lyriks.providers import Song
+from .song import Song
 
 GENIE_ALBUM_API_URL = 'https://app.genie.co.kr/song/j_AlbumSongList.json?axnm={album_id:d}'
 GENIE_LYRICS_API_URL = 'https://dn.genie.co.kr/app/purchase/get_msl.asp?songid={song_id:d}&callback=GenieCallback'

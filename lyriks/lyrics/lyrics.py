@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 
-from lyriks.util import format_lrc_timestamp
+from .util import format_lrc_timestamp
 
 
 def opener(path: str, flags: int) -> int:

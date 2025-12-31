@@ -1,8 +1,8 @@
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release
-from . import Provider
 from .api import qqm_api
 from .api.qqm_api import QQMSong
+from .provider import Provider
 from .registry import register_provider
 
 

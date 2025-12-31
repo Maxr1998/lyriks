@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import lyriks
+from lyriks.cli import cli
 
 if __name__ == '__main__':
-    lyriks.cli()
+    cli()

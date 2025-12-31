@@ -1,6 +1,6 @@
 from click import Choice
 
-from .providers.registry import provider_registry
+from lyriks.providers.registry import provider_registry
 
 
 class ProviderChoice(Choice):

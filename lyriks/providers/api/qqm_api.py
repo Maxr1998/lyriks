@@ -15,8 +15,8 @@ from stamina import retry
 
 from lyriks.lib.zzc_sign import zzc_sign
 from lyriks.lyrics import Lyrics
-from lyriks.providers import Song
-from lyriks.util import format_lrc_timestamp
+from lyriks.lyrics.util import format_lrc_timestamp
+from .song import Song
 
 xml.set_default_parser(XMLParser(no_network=True, recover=True, remove_blank_text=True))
 
