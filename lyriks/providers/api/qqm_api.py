@@ -213,7 +213,10 @@ def _decrypt_content_node(content_node) -> str | None:
     if res != 0:
         return None
 
-    buf = zlib.decompress(buf)
+    try:
+        buf = zlib.decompress(buf)
+    except zlib.error:
+        return None
 
     try:
         content_text = buf.decode('utf-8')
