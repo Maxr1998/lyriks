@@ -29,7 +29,7 @@ def cli():
     '-a',
     '--check-artist',
     is_flag=True,
-    help='ensure artist has a Genie URL when processing albums',
+    help='ensure artist has a URL for the used provider when processing albums',
 )
 @click.option(
     '-n',

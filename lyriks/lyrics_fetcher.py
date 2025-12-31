@@ -206,8 +206,8 @@ class LyricsFetcher:
 
     def has_artist_url(self, provider: Provider, tags) -> bool:
         """
-        Check if the artist has a Genie URL.
-        :return: True if we're unable to check or if this artist has a Genie URL, False otherwise.
+        Check if the artist has a URL for the given provider.
+        :return: True if we're unable to check or if this artist has a URL, False otherwise.
         """
         if MB_AAID_TAG not in tags or ALBUMARTIST_TAG not in tags:
             return True
