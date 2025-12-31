@@ -4,6 +4,8 @@ from json.decoder import JSONDecodeError
 from typing import AnyStr
 
 import httpx
+from httpx import RequestError
+from stamina import retry
 
 from .const import VERSION
 
@@ -84,34 +86,40 @@ class Release:
             return None
 
 
+@retry(on=RequestError, attempts=3)
 def get_artist(artist_mbid: str) -> Artist | None:
     handle_rate_limit()
 
     artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
-    response = httpx.get(artist_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
     try:
-        response_json = response.json()
+        response = httpx.get(
+            artist_url,
+            headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+        ).json()
     except JSONDecodeError:
         print(f'Error: could not fetch artist data for {artist_mbid}')
         return None
 
-    if 'error' in response_json:
-        print(f'Error: {response_json["error"]}')
+    if 'error' in response:
+        print(f'Error: {response["error"]}')
         return None
 
-    return Artist(response_json)
+    return Artist(response)
 
 
+@retry(on=RequestError, attempts=3)
 def get_releases(browse_url: str) -> list[Release]:
     handle_rate_limit()
 
-    response = httpx.get(browse_url, headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'})
     try:
-        response_json = response.json()
+        response = httpx.get(
+            browse_url,
+            headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+        ).json()
     except JSONDecodeError:
         return []
 
-    return [Release(release) for release in response_json.get("releases", [])]
+    return [Release(release) for release in response.get("releases", [])]
 
 
 def get_release_by_track(track_mbid: str) -> Release | None:

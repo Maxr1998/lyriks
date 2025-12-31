@@ -5,6 +5,7 @@ from urllib.parse import unquote
 
 import httpx
 from httpx import RequestError
+from stamina import retry
 
 from lyriks.lyrics import Lyrics
 from lyriks.providers import Song
@@ -21,6 +22,7 @@ class GenieSong(Song):
     pass
 
 
+@retry(on=RequestError, attempts=3)
 def get_album_songs(album_id: int) -> list[GenieSong] | None:
     try:
         response = httpx.get(
@@ -63,6 +65,7 @@ def get_album_songs(album_id: int) -> list[GenieSong] | None:
     return result
 
 
+@retry(on=RequestError, attempts=3)
 def get_stream_info(song_id: int) -> dict | None:
     try:
         response = httpx.get(
@@ -80,6 +83,7 @@ def get_stream_info(song_id: int) -> dict | None:
     return stream_info
 
 
+@retry(on=RequestError, attempts=3)
 def get_song_lyrics(song: GenieSong) -> Lyrics | None:
     # Try to fetch synced lyrics
     try:

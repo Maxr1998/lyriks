@@ -11,6 +11,7 @@ import lxml.etree as xml
 import pyqqmusicdes
 from httpx import RequestError
 from lxml.etree import XMLParser
+from stamina import retry
 
 from lyriks.lib.zzc_sign import zzc_sign
 from lyriks.lyrics import Lyrics
@@ -63,6 +64,7 @@ class QQMSong(Song):
         return cls(id=song_id, mid=song_mid, album_index=album_index, title=title, artists=artists)
 
 
+@retry(on=RequestError, attempts=3)
 def _qqm_request(modules: list[dict]) -> list[dict]:
     request = dict([('comm', QQM_COMM)] + [(f'req_{i + 1}', module) for i, module in enumerate(modules)])
     body = json.dumps(request)
@@ -85,7 +87,7 @@ def _qqm_request(modules: list[dict]) -> list[dict]:
             },
             content=body,
         ).json()
-    except RequestError | JSONDecodeError:
+    except JSONDecodeError:
         return []
 
     try:
@@ -143,6 +145,7 @@ def get_song_info(song_id: int) -> QQMSong | None:
     return QQMSong.from_song_info(song_info)
 
 
+@retry(on=RequestError, attempts=3)
 def get_song_lyrics(song: QQMSong) -> Lyrics | None:
     request = {
         "version": "15",
@@ -151,19 +154,16 @@ def get_song_lyrics(song: QQMSong) -> Lyrics | None:
         "musicid": song.id,
     }
 
-    try:
-        response = httpx.post(
-            QQM_LYRICS_API_URL,
-            headers={
-                "Accept": "application/xml",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Referer": "https://c.y.qq.com/",
-                "User-Agent": CHROME_USER_AGENT,
-            },
-            data=request,
-        ).text
-    except RequestError:
-        return None
+    response = httpx.post(
+        QQM_LYRICS_API_URL,
+        headers={
+            "Accept": "application/xml",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Referer": "https://c.y.qq.com/",
+            "User-Agent": CHROME_USER_AGENT,
+        },
+        data=request,
+    ).text
 
     if response is None:
         return None

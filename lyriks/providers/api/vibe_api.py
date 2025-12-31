@@ -3,6 +3,7 @@ from json import JSONDecodeError
 
 import httpx
 from httpx import RequestError
+from stamina import retry
 
 from lyriks.lyrics import Lyrics
 from lyriks.providers import Song
@@ -29,13 +30,14 @@ class VibeSong(Song):
         return cls(id=track_id, album_index=album_index, title=title, artists=artists)
 
 
+@retry(on=RequestError, attempts=3)
 def get_album_songs(album_id: int) -> list[VibeSong]:
     try:
         response = httpx.get(
             VIBE_ALBUM_TRACKS_API_URL.format(album_id=album_id),
             headers={'Accept': 'application/json'},
         ).json()
-    except RequestError | JSONDecodeError:
+    except JSONDecodeError:
         return []
 
     try:
@@ -49,13 +51,14 @@ def get_album_songs(album_id: int) -> list[VibeSong]:
         return []
 
 
+@retry(on=RequestError, attempts=3)
 def get_song_info(song_id: int) -> VibeSong | None:
     try:
         response = httpx.get(
             VIBE_TRACK_API_URL.format(song_id=song_id),
             headers={'Accept': 'application/json'},
         ).json()
-    except RequestError | JSONDecodeError:
+    except JSONDecodeError:
         return None
 
     try:
@@ -69,13 +72,14 @@ def get_song_info(song_id: int) -> VibeSong | None:
         return None
 
 
+@retry(on=RequestError, attempts=3)
 def get_song_lyrics(song: VibeSong) -> Lyrics | None:
     try:
         lyrics_response = httpx.get(
             VIBE_LYRICS_API_URL.format(song_id=song.id),
             headers={'Accept': 'application/json'},
         ).json()
-    except RequestError | JSONDecodeError:
+    except JSONDecodeError:
         return None
 
     try:

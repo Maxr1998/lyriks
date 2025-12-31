@@ -1,4 +1,5 @@
 import html
+import logging
 import os
 from os import PathLike
 from os import path
@@ -7,7 +8,9 @@ from sys import stderr
 
 import mutagen
 from mutagen.easymp4 import EasyMP4Tags
+from stamina import instrumentation
 
+from .logging import DEFAULT_LOG_LEVEL, LoggingOnRetryHook
 from .mb_client import Artist, Release, get_artist, get_release_by_track
 from .providers import Provider
 
@@ -20,6 +23,10 @@ MB_RTID_TAG = 'musicbrainz_releasetrackid'
 MB_AAID_TAG = 'musicbrainz_albumartistid'
 
 VARIOUS_ARTISTS_MBID = '89ad4ac3-39f7-470e-963a-56509c546377'
+
+instrumentation.set_on_retry_hooks([LoggingOnRetryHook])
+
+logger = logging.getLogger(__name__)
 
 EasyMP4Tags.RegisterFreeformKey(MB_RGID_TAG, 'MusicBrainz Release Group Id')
 EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
@@ -59,7 +66,10 @@ def main(
         for file in files:
             extension = path.splitext(file)[1].lower()
             if extension in ('.flac', '.m4a', '.mp3'):
-                fetcher.fetch_lyrics(root_dir, file)
+                try:
+                    fetcher.fetch_lyrics(root_dir, file)
+                except Exception as e:
+                    logger.log(DEFAULT_LOG_LEVEL, f'Error: could fetch lyrics for \'{file}\': {e!r}')
 
     if report_path:
         try:
