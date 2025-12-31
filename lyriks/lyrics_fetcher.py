@@ -7,7 +7,7 @@ from pathlib import Path
 from sys import stderr
 
 import mutagen
-from httpx import Client as HttpClient
+from httpx import AsyncClient as HttpClient
 from mutagen.easymp4 import EasyMP4Tags
 from stamina import instrumentation
 
@@ -33,7 +33,7 @@ EasyMP4Tags.RegisterFreeformKey(MB_RGID_TAG, 'MusicBrainz Release Group Id')
 EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
 
 
-def main(
+async def main(
     provider_factory: ProviderFactory,
     check_artist: bool,
     dry_run: bool,
@@ -57,7 +57,7 @@ def main(
             print(f'Error: directory \'{report_path.parent}\' does not exist', file=stderr)
             exit(2)
 
-    with HttpClient() as http_client:
+    async with HttpClient() as http_client:
         provider = provider_factory(http_client)
         fetcher = LyricsFetcher(http_client, provider, check_artist, dry_run, upgrade, force, skip_instrumentals)
 
@@ -70,9 +70,10 @@ def main(
                 extension = path.splitext(file)[1].lower()
                 if extension in ('.flac', '.m4a', '.mp3'):
                     try:
-                        fetcher.fetch_lyrics(root_dir, file)
+                        await fetcher.fetch_lyrics(root_dir, file)
                     except Exception as e:
                         logger.log(DEFAULT_LOG_LEVEL, f'Error: could fetch lyrics for \'{file}\': {e!r}')
+                        raise e
 
         if report_path:
             try:
@@ -82,14 +83,14 @@ def main(
                 exit(2)
 
 
-def fetch_single_song(provider_factory: ProviderFactory, song_id: int, output_path: str):
-    with HttpClient() as http_client:
+async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, output_path: str):
+    async with HttpClient() as http_client:
         provider = provider_factory(http_client)
-        song = provider.fetch_song_by_id(song_id)
+        song = await provider.fetch_song_by_id(song_id)
         if song is None:
             print('Song not found.')
             return
-        lyrics = provider.fetch_provider_song_lyrics(song)
+        lyrics = await provider.fetch_provider_song_lyrics(song)
         if lyrics is None:
             print('Failed to fetch lyrics.')
             return
@@ -122,7 +123,7 @@ class LyricsFetcher:
         self.artist_cache: dict[str, Artist] = {}
         self.release_cache: dict[str, Release] = {}
 
-    def fetch_lyrics(self, dirname: str, filename: str) -> None:
+    async def fetch_lyrics(self, dirname: str, filename: str) -> None:
         filepath = path.join(dirname, filename)
         basename = filename.rsplit('.', 1)[0]
 
@@ -168,11 +169,11 @@ class LyricsFetcher:
             return
 
         # Check artist URL
-        if self.check_artist and not self.has_artist_url(tags):
+        if self.check_artist and not await self.has_artist_url(tags):
             return
 
         # Resolve release for the track
-        track_release = self.get_release(track_mbid, album)
+        track_release = await self.get_release(track_mbid, album)
         if not track_release:
             return
 
@@ -187,7 +188,7 @@ class LyricsFetcher:
         # Fetch lyrics
         print(f'Fetching lyrics for {title}', end='', flush=True)
         recording_mbid = track['recording']['id']
-        lyrics = self.provider.fetch_recording_lyrics(track_release, recording_mbid)
+        lyrics = await self.provider.fetch_recording_lyrics(track_release, recording_mbid)
         if not lyrics:
             print(f'\rNo lyrics found for {title}')
             return
@@ -211,7 +212,7 @@ class LyricsFetcher:
                 print(f'\rFetching lyrics for {title} - writing to {static_lyrics_file}')
                 lyrics.write_to_file(static_lyrics_file)
 
-    def has_artist_url(self, tags) -> bool:
+    async def has_artist_url(self, tags) -> bool:
         """
         Check if the artist has a URL for the current provider.
         :return: True if we're unable to check or if this artist has a URL, False otherwise.
@@ -228,19 +229,19 @@ class LyricsFetcher:
             return True
 
         albumartist = tags[ALBUMARTIST_TAG][0] or 'Unknown artist'
-        artist = self.get_artist(albumartist_mbid, albumartist)
+        artist = await self.get_artist(albumartist_mbid, albumartist)
         if not artist or self.provider.has_artist_url(artist):
             return True
 
         return False
 
-    def get_artist(self, artist_mbid: str, artist_name: str) -> Artist | None:
+    async def get_artist(self, artist_mbid: str, artist_name: str) -> Artist | None:
         if artist_mbid in self.artist_cache:
             return self.artist_cache[artist_mbid]
 
         print(f'Fetching artist info for {artist_name}', end='')
 
-        artist = get_artist(self.http_client, artist_mbid)
+        artist = await get_artist(self.http_client, artist_mbid)
         if not artist:
             print(' - no artist found')
             return None
@@ -251,13 +252,13 @@ class LyricsFetcher:
 
         return artist
 
-    def get_release(self, track_mbid: str, album_name: str) -> Release | None:
+    async def get_release(self, track_mbid: str, album_name: str) -> Release | None:
         if track_mbid in self.release_cache:
             return self.release_cache[track_mbid]
 
         print(f'Fetching release info for {album_name}', end='')
 
-        release = get_release_by_track(self.http_client, track_mbid)
+        release = await get_release_by_track(self.http_client, track_mbid)
         if not release:
             print(' - no release found')
             return None

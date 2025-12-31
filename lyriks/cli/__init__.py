@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import click
+import trio
 
 from lyriks.const import PROGNAME, VERSION
 from lyriks.lyrics.util import fix_synced_lyrics
@@ -107,7 +108,18 @@ def sync(
     """
     report_path = Path(report_path) if report_path else None
     collection_path = Path(collection_path)
-    main(provider_factory, check_artist, dry_run, upgrade, force, skip_instrumentals, report_path, collection_path)
+
+    trio.run(
+        main,
+        provider_factory,
+        check_artist,
+        dry_run,
+        upgrade,
+        force,
+        skip_instrumentals,
+        report_path,
+        collection_path,
+    )
 
 
 @cli.command()
@@ -138,7 +150,7 @@ def fetch(provider_factory: ProviderFactory, output_path: str, song_id: int):
 
     The song ID can be found in the URL of the song's Genie page.
     """
-    fetch_single_song(provider_factory, song_id, output_path)
+    trio.run(fetch_single_song, provider_factory, song_id, output_path)
 
 
 @cli.command()

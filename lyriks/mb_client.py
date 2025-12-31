@@ -3,7 +3,8 @@ import time
 from json.decoder import JSONDecodeError
 from typing import AnyStr
 
-from httpx import Client as HttpClient
+import trio
+from httpx import AsyncClient as HttpClient
 from httpx import RequestError
 from stamina import retry
 
@@ -17,11 +18,11 @@ _RELEASE_INC = 'artist-credits+release-groups+recordings+media+url-rels'
 last_request_time = 0
 
 
-def handle_rate_limit():
+async def handle_rate_limit():
     global last_request_time
     time_since = time.time() - last_request_time
     if time_since < 1:
-        time.sleep(1 - time_since)
+        await trio.sleep(1 - time_since)
     last_request_time = time.time()
 
 
@@ -87,14 +88,16 @@ class Release:
 
 
 @retry(on=RequestError, attempts=3)
-def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None:
-    handle_rate_limit()
+async def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None:
+    await handle_rate_limit()
 
     artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
     try:
-        response = http_client.get(
-            artist_url,
-            headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+        response = (
+            await http_client.get(
+                artist_url,
+                headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+            )
         ).json()
     except JSONDecodeError:
         print(f'Error: could not fetch artist data for {artist_mbid}')
@@ -108,13 +111,15 @@ def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None:
 
 
 @retry(on=RequestError, attempts=3)
-def get_releases(http_client: HttpClient, browse_url: str) -> list[Release]:
-    handle_rate_limit()
+async def get_releases(http_client: HttpClient, browse_url: str) -> list[Release]:
+    await handle_rate_limit()
 
     try:
-        response = http_client.get(
-            browse_url,
-            headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+        response = (
+            await http_client.get(
+                browse_url,
+                headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+            )
         ).json()
     except JSONDecodeError:
         return []
@@ -122,10 +127,14 @@ def get_releases(http_client: HttpClient, browse_url: str) -> list[Release]:
     return [Release(release) for release in response.get("releases", [])]
 
 
-def get_release_by_track(http_client: HttpClient, track_mbid: str) -> Release | None:
-    releases = get_releases(http_client, f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}')
+async def get_release_by_track(http_client: HttpClient, track_mbid: str) -> Release | None:
+    releases = await get_releases(
+        http_client, f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}'
+    )
     return next(iter(releases), None)
 
 
-def get_releases_by_release_group(http_client: HttpClient, rg_mbid: str) -> list[Release]:
-    return get_releases(http_client, f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}')
+async def get_releases_by_release_group(http_client: HttpClient, rg_mbid: str) -> list[Release]:
+    return await get_releases(
+        http_client, f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}'
+    )

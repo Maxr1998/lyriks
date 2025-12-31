@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from json import JSONDecodeError
 
-from httpx import Client as HttpClient
+from httpx import AsyncClient as HttpClient
 from httpx import RequestError
 from stamina import retry
 
@@ -31,11 +31,13 @@ class VibeSong(Song):
 
 
 @retry(on=RequestError, attempts=3)
-def get_album_songs(http_client: HttpClient, album_id: int) -> list[VibeSong]:
+async def get_album_songs(http_client: HttpClient, album_id: int) -> list[VibeSong]:
     try:
-        response = http_client.get(
-            VIBE_ALBUM_TRACKS_API_URL.format(album_id=album_id),
-            headers={'Accept': 'application/json'},
+        response = (
+            await http_client.get(
+                VIBE_ALBUM_TRACKS_API_URL.format(album_id=album_id),
+                headers={'Accept': 'application/json'},
+            )
         ).json()
     except JSONDecodeError:
         return []
@@ -52,11 +54,13 @@ def get_album_songs(http_client: HttpClient, album_id: int) -> list[VibeSong]:
 
 
 @retry(on=RequestError, attempts=3)
-def get_song_info(http_client: HttpClient, song_id: int) -> VibeSong | None:
+async def get_song_info(http_client: HttpClient, song_id: int) -> VibeSong | None:
     try:
-        response = http_client.get(
-            VIBE_TRACK_API_URL.format(song_id=song_id),
-            headers={'Accept': 'application/json'},
+        response = (
+            await http_client.get(
+                VIBE_TRACK_API_URL.format(song_id=song_id),
+                headers={'Accept': 'application/json'},
+            )
         ).json()
     except JSONDecodeError:
         return None
@@ -73,11 +77,13 @@ def get_song_info(http_client: HttpClient, song_id: int) -> VibeSong | None:
 
 
 @retry(on=RequestError, attempts=3)
-def get_song_lyrics(http_client: HttpClient, song: VibeSong) -> Lyrics | None:
+async def get_song_lyrics(http_client: HttpClient, song: VibeSong) -> Lyrics | None:
     try:
-        lyrics_response = http_client.get(
-            VIBE_LYRICS_API_URL.format(song_id=song.id),
-            headers={'Accept': 'application/json'},
+        lyrics_response = (
+            await http_client.get(
+                VIBE_LYRICS_API_URL.format(song_id=song.id),
+                headers={'Accept': 'application/json'},
+            )
         ).json()
     except JSONDecodeError:
         return None

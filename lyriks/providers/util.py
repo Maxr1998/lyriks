@@ -1,13 +1,13 @@
 from typing import Callable, TypeVar
 
-from httpx import Client as HttpClient
+from httpx import AsyncClient as HttpClient
 
 from lyriks.mb_client import Release, get_releases_by_release_group
 
 T = TypeVar('T')
 
 
-def pick_release_from_release_group(
+async def pick_release_from_release_group(
     http_client: HttpClient,
     release: Release,
     selector: Callable[[Release], T | None],
@@ -26,7 +26,7 @@ def pick_release_from_release_group(
         return release, selection
 
     # If that fails, check all releases from the release group
-    rg_releases = get_releases_by_release_group(http_client, release.rg_mbid)
+    rg_releases = await get_releases_by_release_group(http_client, release.rg_mbid)
     if not rg_releases:
         return None
 

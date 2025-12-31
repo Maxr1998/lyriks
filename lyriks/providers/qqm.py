@@ -12,9 +12,9 @@ class QQMusic(Provider):
     Provider for QQ Music.
     """
 
-    def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
+    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
         # Resolve album
-        qqm_songs = self.get_mapped_provider_songs(
+        qqm_songs = await self.get_mapped_provider_songs(
             track_release,
             lambda r: r.extract_url_str(r'https://y.qq.com/n/ryqq(?:_v2)?/albumDetail/(\w+)'),
             lambda album_id: qqm_api.get_album_songs(self.http_client, album_id),
@@ -28,13 +28,13 @@ class QQMusic(Provider):
             return None
 
         # Fetch lyrics
-        return self.fetch_provider_song_lyrics(qqm_song)
+        return await self.fetch_provider_song_lyrics(qqm_song)
 
-    def fetch_song_by_id(self, song_id: int) -> QQMSong | None:
-        return qqm_api.get_song_info(self.http_client, song_id)
+    async def fetch_song_by_id(self, song_id: int) -> QQMSong | None:
+        return await qqm_api.get_song_info(self.http_client, song_id)
 
-    def fetch_provider_song_lyrics(self, song: QQMSong) -> Lyrics | None:
-        return qqm_api.get_song_lyrics(self.http_client, song)
+    async def fetch_provider_song_lyrics(self, song: QQMSong) -> Lyrics | None:
+        return await qqm_api.get_song_lyrics(self.http_client, song)
 
     @property
     def provider_domain(self) -> str:

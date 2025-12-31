@@ -8,7 +8,7 @@ from json import JSONDecodeError
 
 import lxml.etree as xml
 import pyqqmusicdes
-from httpx import Client as HttpClient
+from httpx import AsyncClient as HttpClient
 from httpx import RequestError
 from lxml.etree import XMLParser
 from stamina import retry
@@ -65,27 +65,29 @@ class QQMSong(Song):
 
 
 @retry(on=RequestError, attempts=3)
-def _qqm_request(http_client: HttpClient, modules: list[dict]) -> list[dict]:
+async def _qqm_request(http_client: HttpClient, modules: list[dict]) -> list[dict]:
     request = dict([('comm', QQM_COMM)] + [(f'req_{i + 1}', module) for i, module in enumerate(modules)])
     body = json.dumps(request)
     signature = zzc_sign(body)
 
     try:
-        response = http_client.post(
-            QQM_API_URL,
-            params={
-                "_": int(datetime.now().timestamp() * 1000),
-                "sign": signature,
-            },
-            headers={
-                "Accept": "application/json",
-                "Accept-Language": "en-DE,en;q=1",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Origin": "https://y.qq.com",
-                "Referer": "https://y.qq.com/",
-                "User-Agent": CHROME_USER_AGENT,
-            },
-            content=body,
+        response = (
+            await http_client.post(
+                QQM_API_URL,
+                params={
+                    "_": int(datetime.now().timestamp() * 1000),
+                    "sign": signature,
+                },
+                headers={
+                    "Accept": "application/json",
+                    "Accept-Language": "en-DE,en;q=1",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Origin": "https://y.qq.com",
+                    "Referer": "https://y.qq.com/",
+                    "User-Agent": CHROME_USER_AGENT,
+                },
+                content=body,
+            )
         ).json()
     except JSONDecodeError:
         return []
@@ -98,8 +100,8 @@ def _qqm_request(http_client: HttpClient, modules: list[dict]) -> list[dict]:
     return response_modules
 
 
-def get_album_songs(http_client: HttpClient, album_mid: str) -> list[QQMSong]:
-    response = _qqm_request(
+async def get_album_songs(http_client: HttpClient, album_mid: str) -> list[QQMSong]:
+    response = await _qqm_request(
         http_client,
         [
             {
@@ -124,8 +126,8 @@ def get_album_songs(http_client: HttpClient, album_mid: str) -> list[QQMSong]:
         return []
 
 
-def get_song_info(http_client: HttpClient, song_id: int) -> QQMSong | None:
-    response = _qqm_request(
+async def get_song_info(http_client: HttpClient, song_id: int) -> QQMSong | None:
+    response = await _qqm_request(
         http_client,
         [
             {
@@ -148,7 +150,7 @@ def get_song_info(http_client: HttpClient, song_id: int) -> QQMSong | None:
 
 
 @retry(on=RequestError, attempts=3)
-def get_song_lyrics(http_client: HttpClient, song: QQMSong) -> Lyrics | None:
+async def get_song_lyrics(http_client: HttpClient, song: QQMSong) -> Lyrics | None:
     request = {
         "version": "15",
         "miniversion": "82",
@@ -156,15 +158,17 @@ def get_song_lyrics(http_client: HttpClient, song: QQMSong) -> Lyrics | None:
         "musicid": song.id,
     }
 
-    response = http_client.post(
-        QQM_LYRICS_API_URL,
-        headers={
-            "Accept": "application/xml",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Referer": "https://c.y.qq.com/",
-            "User-Agent": CHROME_USER_AGENT,
-        },
-        data=request,
+    response = (
+        await http_client.post(
+            QQM_LYRICS_API_URL,
+            headers={
+                "Accept": "application/xml",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Referer": "https://c.y.qq.com/",
+                "User-Agent": CHROME_USER_AGENT,
+            },
+            data=request,
+        )
     ).text
 
     if response is None:

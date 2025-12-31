@@ -19,6 +19,7 @@ dependencies = [
     "mutagen>=1.45",
     "pyqqmusicdes>=0.1.0",
     "stamina>=25.2.0",
+    "trio>=0.32.0",
 ]
 scripts = { "lyriks" = "lyriks:cli" }
 

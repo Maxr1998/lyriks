@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Protocol
+from typing import Callable, Protocol, Awaitable
 from typing import TypeVar
 
-from httpx import Client as HttpClient
+from httpx import AsyncClient as HttpClient
 
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release, Artist
@@ -30,7 +30,7 @@ class Provider(ABC):
         self.missing_releases: dict[str, Release] = {}
 
     @abstractmethod
-    def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
+    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
         """
         Fetch lyrics for a track, identified by its recording MBID and the release it appears on.
 
@@ -40,14 +40,14 @@ class Provider(ABC):
         pass
 
     @abstractmethod
-    def fetch_song_by_id(self, song_id: int) -> Song | None:
+    async def fetch_song_by_id(self, song_id: int) -> Song | None:
         """
         Fetch a provider-specific song entity by its ID.
         """
         pass
 
     @abstractmethod
-    def fetch_provider_song_lyrics(self, song: Song) -> Lyrics | None:
+    async def fetch_provider_song_lyrics(self, song: Song) -> Lyrics | None:
         """
         Fetch lyrics for a given song entity. Its content may be provider-specific.
         """
@@ -77,11 +77,11 @@ class Provider(ABC):
 
         return False
 
-    def get_mapped_provider_songs(
+    async def get_mapped_provider_songs(
         self,
         track_release: Release,
         selector: Callable[[Release], T | None],
-        fetcher: Callable[[T], list[S] | None],
+        fetcher: Callable[[T], Awaitable[list[S] | None]],
     ) -> dict[str, S] | None:
         """
         Get songs for a track release, matched to its recordings.
@@ -94,7 +94,7 @@ class Provider(ABC):
         if track_release.id in self.cache:
             return self.cache[track_release.id]
 
-        result = pick_release_from_release_group(self.http_client, track_release, selector)
+        result = await pick_release_from_release_group(self.http_client, track_release, selector)
         if not result:
             print(f'\rNo URL found for release {track_release.title} [{track_release.id}]')
             self.cache[track_release.id] = None
@@ -102,7 +102,7 @@ class Provider(ABC):
             return None
         matched_release, album_id = result
 
-        provider_songs = fetcher(album_id)
+        provider_songs = await fetcher(album_id)
         if not provider_songs:
             self.cache[track_release.id] = None
             return None

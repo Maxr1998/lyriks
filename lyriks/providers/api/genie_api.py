@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from json.decoder import JSONDecodeError
 from urllib.parse import unquote
 
-from httpx import Client as HttpClient
+from httpx import AsyncClient as HttpClient
 from httpx import RequestError
 from stamina import retry
 
@@ -23,11 +23,13 @@ class GenieSong(Song):
 
 
 @retry(on=RequestError, attempts=3)
-def get_album_songs(http_client: HttpClient, album_id: int) -> list[GenieSong] | None:
+async def get_album_songs(http_client: HttpClient, album_id: int) -> list[GenieSong] | None:
     try:
-        response = http_client.get(
-            GENIE_ALBUM_API_URL.format(album_id=album_id),
-            headers={'User-Agent': CURL_USER_AGENT},
+        response = (
+            await http_client.get(
+                GENIE_ALBUM_API_URL.format(album_id=album_id),
+                headers={'User-Agent': CURL_USER_AGENT},
+            )
         ).json()
     except RequestError | JSONDecodeError:
         return None
@@ -66,11 +68,13 @@ def get_album_songs(http_client: HttpClient, album_id: int) -> list[GenieSong] |
 
 
 @retry(on=RequestError, attempts=3)
-def get_stream_info(http_client: HttpClient, song_id: int) -> dict | None:
+async def get_stream_info(http_client: HttpClient, song_id: int) -> dict | None:
     try:
-        response = http_client.get(
-            GENIE_STREAM_INFO_API_URL.format(song_id=song_id),
-            headers={'User-Agent': CURL_USER_AGENT},
+        response = (
+            await http_client.get(
+                GENIE_STREAM_INFO_API_URL.format(song_id=song_id),
+                headers={'User-Agent': CURL_USER_AGENT},
+            )
         ).json()
     except RequestError | JSONDecodeError:
         return None
@@ -84,12 +88,14 @@ def get_stream_info(http_client: HttpClient, song_id: int) -> dict | None:
 
 
 @retry(on=RequestError, attempts=3)
-def get_song_lyrics(http_client: HttpClient, song: GenieSong) -> Lyrics | None:
+async def get_song_lyrics(http_client: HttpClient, song: GenieSong) -> Lyrics | None:
     # Try to fetch synced lyrics
     try:
-        response = http_client.get(
-            GENIE_LYRICS_API_URL.format(song_id=song.id),
-            headers={'User-Agent': CURL_USER_AGENT},
+        response = (
+            await http_client.get(
+                GENIE_LYRICS_API_URL.format(song_id=song.id),
+                headers={'User-Agent': CURL_USER_AGENT},
+            )
         ).text
     except RequestError:
         return None
@@ -108,7 +114,7 @@ def get_song_lyrics(http_client: HttpClient, song: GenieSong) -> Lyrics | None:
         return Lyrics.from_dict(song.id, song.title, lyrics_dict)
     else:
         # Fall back to static lyrics from stream info
-        stream_info = get_stream_info(http_client, song.id)
+        stream_info = await get_stream_info(http_client, song.id)
         if not stream_info:
             return None
 
