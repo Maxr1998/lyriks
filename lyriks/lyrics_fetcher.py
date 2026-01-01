@@ -5,6 +5,7 @@ from os import path
 from pathlib import Path
 
 import mutagen
+import trio
 from httpx import AsyncClient as HttpClient
 from mutagen.easymp4 import EasyMP4Tags
 from stamina import instrumentation
@@ -13,6 +14,8 @@ from .cli.console import console
 from .logging import LoggingOnRetryHook
 from .mb_client import Artist, Release, get_artist, get_release_by_track
 from .providers import ProviderFactory
+
+NUM_WORKERS = 4
 
 TITLE_TAG = 'title'
 ALBUM_TAG = 'album'
@@ -50,18 +53,27 @@ async def main(
             exit(2)
 
     async with LyricsFetcher(provider_factory, check_artist, dry_run, upgrade, force, skip_instrumentals) as fetcher:
-        for root_dir, dirs, files in os.walk(collection_path, topdown=True):
-            if path.exists(path.join(root_dir, '.nolyrics')):
-                dirs.clear()
-                continue
+        worker_semaphore = trio.Semaphore(NUM_WORKERS, max_value=NUM_WORKERS)
 
-            for file in files:
-                extension = path.splitext(file)[1].lower()
-                if extension in ('.flac', '.m4a', '.mp3'):
-                    try:
-                        await fetcher.fetch_lyrics(root_dir, file)
-                    except Exception as e:
-                        console.print(f'Error: could fetch lyrics for \'{file}\': {e!r}', style='error')
+        async def worker(parent: str, audio_file: str):
+            try:
+                await fetcher.fetch_lyrics(parent, audio_file)
+            except Exception as e:
+                console.print(f'Error: could fetch lyrics for \'{audio_file}\': {e!r}', style='error')
+            finally:
+                worker_semaphore.release()
+
+        async with trio.open_nursery() as nursery:
+            for directory, sub_directories, files in os.walk(collection_path, topdown=True):
+                if path.exists(path.join(directory, '.nolyrics')):
+                    sub_directories.clear()
+                    continue
+
+                for file in files:
+                    extension = path.splitext(file)[1].lower()
+                    if extension in ('.flac', '.m4a', '.mp3'):
+                        await worker_semaphore.acquire()
+                        nursery.start_soon(worker, directory, file)
 
         if report_path:
             try:
