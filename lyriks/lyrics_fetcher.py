@@ -65,7 +65,6 @@ async def main(
                         await fetcher.fetch_lyrics(root_dir, file)
                     except Exception as e:
                         logger.log(DEFAULT_LOG_LEVEL, f'Error: could fetch lyrics for \'{file}\': {e!r}')
-                        raise e
 
         if report_path:
             try:
