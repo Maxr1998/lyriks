@@ -13,7 +13,7 @@ from stamina import instrumentation
 
 from .logging import DEFAULT_LOG_LEVEL, LoggingOnRetryHook
 from .mb_client import Artist, Release, get_artist, get_release_by_track
-from .providers import Provider, ProviderFactory
+from .providers import ProviderFactory
 
 TITLE_TAG = 'title'
 ALBUM_TAG = 'album'
@@ -57,10 +57,7 @@ async def main(
             print(f'Error: directory \'{report_path.parent}\' does not exist', file=stderr)
             exit(2)
 
-    async with HttpClient() as http_client:
-        provider = provider_factory(http_client)
-        fetcher = LyricsFetcher(http_client, provider, check_artist, dry_run, upgrade, force, skip_instrumentals)
-
+    async with LyricsFetcher(provider_factory, check_artist, dry_run, upgrade, force, skip_instrumentals) as fetcher:
         for root_dir, dirs, files in os.walk(collection_path, topdown=True):
             if path.exists(path.join(root_dir, '.nolyrics')):
                 dirs.clear()
@@ -105,16 +102,14 @@ async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, out
 class LyricsFetcher:
     def __init__(
         self,
-        http_client: HttpClient,
-        provider: Provider,
+        provider_factory: ProviderFactory,
         check_artist: bool = False,
         dry_run: bool = False,
         upgrade: bool = False,
         force: bool = False,
         skip_inst: bool = False,
     ):
-        self.http_client = http_client
-        self.provider = provider
+        self.provider_factory = provider_factory
         self.check_artist = check_artist
         self.dry_run = dry_run
         self.upgrade = upgrade
@@ -122,6 +117,14 @@ class LyricsFetcher:
         self.skip_inst = skip_inst
         self.artist_cache: dict[str, Artist] = {}
         self.release_cache: dict[str, Release] = {}
+
+    async def __aenter__(self) -> 'LyricsFetcher':
+        self.http_client = HttpClient()
+        self.provider = self.provider_factory(self.http_client)
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.http_client.aclose()
 
     async def fetch_lyrics(self, dirname: str, filename: str) -> None:
         filepath = path.join(dirname, filename)
