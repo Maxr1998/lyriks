@@ -8,9 +8,11 @@ from httpx import AsyncClient as HttpClient
 from httpx import RequestError
 from stamina import retry
 
+from .cli.console import console
 from .const import VERSION
 
-API_URL = 'https://musicbrainz.org/ws/2'
+MB_URL = 'https://musicbrainz.org'
+API_URL = f'{MB_URL}/ws/2'
 USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
 _ARTIST_INC = 'url-rels'
 _RELEASE_INC = 'artist-credits+release-groups+recordings+media+url-rels'
@@ -37,6 +39,14 @@ class Artist:
             if relation.get('target-type') == 'url'
         }
 
+    @property
+    def url(self):
+        return f'{MB_URL}/artist/{self.id}'
+
+    @property
+    def rich_string(self) -> str:
+        return f'[underline][link={self.url}]{self.name}[/link][/underline]'
+
 
 class Release:
     def __init__(self, data: dict):
@@ -52,6 +62,14 @@ class Release:
 
     def get_track_map(self) -> list[dict[str, dict]]:
         return [{track['id']: track for track in medium['tracks']} for medium in self.media]
+
+    @property
+    def url(self):
+        return f'{MB_URL}/release/{self.id}'
+
+    @property
+    def rich_string(self) -> str:
+        return f'[underline][link={self.url}]{self.title}[/link][/underline]'
 
     def extract_url_str(self, pattern: AnyStr) -> str | None:
         """
@@ -100,11 +118,10 @@ async def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None
             )
         ).json()
     except JSONDecodeError:
-        print(f'Error: could not fetch artist data for {artist_mbid}')
         return None
 
     if 'error' in response:
-        print(f'Error: {response["error"]}')
+        console.print(f'[bold red]Error: {response["error"]}')
         return None
 
     return Artist(response)

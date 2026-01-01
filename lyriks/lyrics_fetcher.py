@@ -1,17 +1,16 @@
 import html
-import logging
 import os
 from os import PathLike
 from os import path
 from pathlib import Path
-from sys import stderr
 
 import mutagen
 from httpx import AsyncClient as HttpClient
 from mutagen.easymp4 import EasyMP4Tags
 from stamina import instrumentation
 
-from .logging import DEFAULT_LOG_LEVEL, LoggingOnRetryHook
+from .cli.console import console
+from .logging import LoggingOnRetryHook
 from .mb_client import Artist, Release, get_artist, get_release_by_track
 from .providers import ProviderFactory
 
@@ -26,8 +25,6 @@ MB_AAID_TAG = 'musicbrainz_albumartistid'
 VARIOUS_ARTISTS_MBID = '89ad4ac3-39f7-470e-963a-56509c546377'
 
 instrumentation.set_on_retry_hooks([LoggingOnRetryHook])
-
-logger = logging.getLogger(__name__)
 
 EasyMP4Tags.RegisterFreeformKey(MB_RGID_TAG, 'MusicBrainz Release Group Id')
 EasyMP4Tags.RegisterFreeformKey(MB_RTID_TAG, 'MusicBrainz Release Track Id')
@@ -49,7 +46,7 @@ async def main(
         if report_path.is_dir():
             report_path = report_path / 'report.html'
         if not report_path.parent.exists():
-            print(f'Error: directory \'{report_path.parent}\' does not exist', file=stderr)
+            console.print(f'Error: directory \'{report_path.parent}\' does not exist', style='error')
             exit(2)
 
     async with LyricsFetcher(provider_factory, check_artist, dry_run, upgrade, force, skip_instrumentals) as fetcher:
@@ -64,33 +61,34 @@ async def main(
                     try:
                         await fetcher.fetch_lyrics(root_dir, file)
                     except Exception as e:
-                        logger.log(DEFAULT_LOG_LEVEL, f'Error: could fetch lyrics for \'{file}\': {e!r}')
+                        console.print(f'Error: could fetch lyrics for \'{file}\': {e!r}', style='error')
 
         if report_path:
             try:
                 fetcher.write_report(report_path)
             except OSError:
-                print(f'Error: could not write report to \'{report_path}\'', file=stderr)
+                console.print(f'Error: could not write report to \'{report_path}\'', style='error')
                 exit(2)
 
 
 async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, output_path: str):
-    async with HttpClient() as http_client:
-        provider = provider_factory(http_client)
-        song = await provider.fetch_song_by_id(song_id)
-        if song is None:
-            print('Song not found.')
-            return
-        lyrics = await provider.fetch_provider_song_lyrics(song)
-        if lyrics is None:
-            print('Failed to fetch lyrics.')
-            return
+    with console.status('Fetching lyrics…'):
+        async with HttpClient() as http_client:
+            provider = provider_factory(http_client)
+            song = await provider.fetch_song_by_id(song_id)
+            if song is None:
+                console.print('Song not found.')
+                return
+            lyrics = await provider.fetch_provider_song_lyrics(song)
+            if lyrics is None:
+                console.print('Failed to fetch lyrics.')
+                return
 
     extension = 'lrc' if lyrics.is_synced else 'txt'
     output_path = output_path or f'{lyrics.song_title}.{extension}'
     lyrics.write_to_file(output_path)
 
-    print(f'Lyrics saved to {output_path}')
+    console.print(f'Lyrics saved to {output_path}')
 
 
 class LyricsFetcher:
@@ -109,15 +107,18 @@ class LyricsFetcher:
         self.upgrade = upgrade
         self.force = force
         self.skip_inst = skip_inst
+        self.status = console.status('idle')
         self.artist_cache: dict[str, Artist] = {}
         self.release_cache: dict[str, Release] = {}
 
     async def __aenter__(self) -> 'LyricsFetcher':
         self.http_client = HttpClient()
         self.provider = self.provider_factory(self.http_client)
+        self.status.start()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.status.stop()
         await self.http_client.aclose()
 
     async def fetch_lyrics(self, dirname: str, filename: str) -> None:
@@ -183,31 +184,31 @@ class LyricsFetcher:
             return
 
         # Fetch lyrics
-        print(f'Fetching lyrics for {title}', end='', flush=True)
+        self.status.update(f'Fetching lyrics for {title}')
         recording_mbid = track['recording']['id']
         lyrics = await self.provider.fetch_recording_lyrics(track_release, recording_mbid)
         if not lyrics:
-            print(f'\rNo lyrics found for {title}')
+            console.print(f'No lyrics found for {title}')
             return
 
         if self.dry_run:
-            print(f'\rFetching lyrics for {title} - done [dry run]')
+            console.print(f'Fetched lyrics for {title} \\[dry run]')
         else:
             # Write lyrics to file
             if lyrics.is_synced:
-                print(f'\rFetching lyrics for {title} - writing to {synced_lyrics_file}')
                 lyrics.write_to_file(synced_lyrics_file)
+                console.print(f'Wrote synced lyrics for {title} to \'{synced_lyrics_file}\'')
 
                 # Remove static lyrics file if necessary
                 if has_static_lyrics:
                     os.unlink(static_lyrics_file)
             elif has_synced_lyrics:
-                print(f'\rFetching lyrics for {title} - not writing static lyrics, synced lyrics already exist')
+                console.print(f'Not writing static lyrics for {title} as synced lyrics already exist')
             elif self.upgrade and has_static_lyrics:
-                print(f'\rFetching lyrics for {title} - no synced lyrics available to upgrade to')
+                console.print(f'No upgraded lyrics available for {title}')
             else:
-                print(f'\rFetching lyrics for {title} - writing to {static_lyrics_file}')
                 lyrics.write_to_file(static_lyrics_file)
+                console.print(f'Wrote static lyrics for {title} to \'{static_lyrics_file}\'')
 
     async def has_artist_url(self, tags) -> bool:
         """
@@ -236,16 +237,14 @@ class LyricsFetcher:
         if artist_mbid in self.artist_cache:
             return self.artist_cache[artist_mbid]
 
-        print(f'Fetching artist info for {artist_name}', end='')
+        self.status.update(f'Fetching artist info for {artist_name}')
 
         artist = await get_artist(self.http_client, artist_mbid)
         if not artist:
-            print(' - no artist found')
+            console.print(f'Artist {artist_name} not found', style='warning')
             return None
 
         self.artist_cache[artist_mbid] = artist
-
-        print()  # terminate line
 
         return artist
 
@@ -253,18 +252,16 @@ class LyricsFetcher:
         if track_mbid in self.release_cache:
             return self.release_cache[track_mbid]
 
-        print(f'Fetching release info for {album_name}', end='')
+        self.status.update(f'Fetching release info for {album_name}')
 
         release = await get_release_by_track(self.http_client, track_mbid)
         if not release:
-            print(' - no release found')
+            console.print(f'No release found for {album_name}', style='warning')
             return None
 
         for media in release.data['media']:
             for track in media['tracks']:
                 self.release_cache[track['id']] = release
-
-        print()  # terminate line
 
         return release
 

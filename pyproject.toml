@@ -18,6 +18,7 @@ dependencies = [
     "lxml>=6.0.2",
     "mutagen>=1.45",
     "pyqqmusicdes>=0.1.0",
+    "rich>=14.2.0",
     "stamina>=25.2.0",
     "trio>=0.32.0",
 ]

@@ -4,6 +4,7 @@ from typing import TypeVar
 
 from httpx import AsyncClient as HttpClient
 
+from lyriks.cli.console import console
 from lyriks.lyrics import Lyrics
 from lyriks.mb_client import Release, Artist
 from .api.song import Song
@@ -72,7 +73,7 @@ class Provider(ABC):
             return True
 
         if artist.id not in self.missing_artists:
-            print(f'\rNo {domain} URL found for artist {artist.name} [{artist.id}]')
+            console.print(f'No {domain} URL found for artist {artist.rich_string}', style='warning')
             self.missing_artists[artist.id] = artist
 
         return False
@@ -96,7 +97,7 @@ class Provider(ABC):
 
         result = await pick_release_from_release_group(self.http_client, track_release, selector)
         if not result:
-            print(f'\rNo URL found for release {track_release.title} [{track_release.id}]')
+            console.print(f'No URL found for release {track_release.rich_string}', style='warning')
             self.cache[track_release.id] = None
             self.missing_releases[track_release.id] = track_release
             return None
@@ -109,7 +110,7 @@ class Provider(ABC):
 
         # Ensure track count matches
         if len(provider_songs) != matched_release.get_track_count():
-            print(f'\rTrack count mismatch for release {track_release.title} [{track_release.id}]')
+            console.print(f'Track count mismatch for release {matched_release.rich_string}', style='warning')
             self.cache[track_release.id] = None
             return None
 
