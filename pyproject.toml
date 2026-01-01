@@ -21,7 +21,7 @@ dependencies = [
     "stamina>=25.2.0",
     "trio>=0.32.0",
 ]
-scripts = { "lyriks" = "lyriks:cli" }
+scripts = { "lyriks" = "lyriks.cli:cli" }
 
 [tool.uv]
 package = true
