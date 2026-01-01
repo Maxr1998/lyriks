@@ -79,7 +79,7 @@ def cli():
     default='genie',
     help='the lyrics provider to use (default: genie)',
 )
-@click.argument('collection_path', type=click.Path(exists=True))
+@click.argument('collection_path', type=click.Path(exists=True, file_okay=False))
 @click.version_option(
     VERSION,
     '-v',

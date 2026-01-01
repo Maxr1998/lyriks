@@ -43,11 +43,6 @@ async def main(
     report_path: Path | None,
     collection_path: Path,
 ):
-    # Validate collection path
-    if not collection_path.is_dir():
-        print(f'Error: directory \'{collection_path}\' does not exist', file=stderr)
-        exit(2)
-
     # Normalize and validate report path
     if report_path:
         report_path = report_path.expanduser().absolute()
