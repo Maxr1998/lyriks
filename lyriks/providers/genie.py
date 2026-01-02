@@ -1,5 +1,5 @@
 from lyriks.lyrics import Lyrics
-from lyriks.mb_client import Release
+from lyriks.mb_client import Mbid, Release
 from .api import genie_api
 from .api.genie_api import GenieSong
 from .provider import Provider
@@ -12,7 +12,7 @@ class Genie(Provider):
     Provider for Genie Music.
     """
 
-    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
+    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: Mbid) -> Lyrics | None:
         # Resolve Genie album
         genie_songs = await self.get_mapped_provider_songs(
             track_release,

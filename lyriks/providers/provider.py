@@ -6,7 +6,7 @@ from httpx import AsyncClient as HttpClient
 
 from lyriks.cli.console import console
 from lyriks.lyrics import Lyrics
-from lyriks.mb_client import Release, Artist
+from lyriks.mb_client import Mbid, Artist, Release
 from .api.song import Song
 from .util import pick_release_from_release_group
 
@@ -31,7 +31,7 @@ class Provider(ABC):
         self.missing_releases: dict[str, Release] = {}
 
     @abstractmethod
-    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
+    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: Mbid) -> Lyrics | None:
         """
         Fetch lyrics for a track, identified by its recording MBID and the release it appears on.
 
@@ -83,7 +83,7 @@ class Provider(ABC):
         track_release: Release,
         selector: Callable[[Release], T | None],
         fetcher: Callable[[T], Awaitable[list[S] | None]],
-    ) -> dict[str, S] | None:
+    ) -> dict[Mbid, S] | None:
         """
         Get songs for a track release, matched to its recordings.
 
@@ -120,7 +120,7 @@ class Provider(ABC):
         # Iterate over all tracks in the release
         for medium in matched_release.media:
             for track in medium['tracks']:
-                recording_mbid: str = track['recording']['id']
+                recording_mbid: Mbid = track['recording']['id']
                 try:
                     # Match song by track number if possible
                     track_number = int(track['number'])

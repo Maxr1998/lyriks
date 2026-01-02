@@ -1,7 +1,7 @@
 import re
 import time
 from json.decoder import JSONDecodeError
-from typing import AnyStr
+from typing import AnyStr, NewType
 
 import trio
 from httpx import AsyncClient as HttpClient
@@ -13,6 +13,8 @@ from trio import Lock
 from .cli.console import console
 from .const import VERSION
 
+Mbid = NewType('Mbid', str)
+
 MB_URL = 'https://musicbrainz.org'
 API_URL = f'{MB_URL}/ws/2'
 USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
@@ -23,7 +25,7 @@ _RELEASE_INC = 'artist-credits+release-groups+recordings+media+url-rels'
 class Artist:
     def __init__(self, data: dict):
         self.data = data
-        self.id: str = data['id']
+        self.id: Mbid = data['id']
         self.name: str = data['name']
         self.urls: set = {
             relation['url']['resource']
@@ -43,16 +45,16 @@ class Artist:
 class Release:
     def __init__(self, data: dict):
         self.data = data
-        self.id: str = data['id']
+        self.id: Mbid = data['id']
         self.title: str = data['title']
         self.artist_credit: dict = data['artist-credit']
-        self.rg_mbid: str = data['release-group']['id']
+        self.rg_mbid: Mbid = data['release-group']['id']
         self.media: list = self.data['media']
 
     def get_track_count(self) -> int:
         return sum(medium['track-count'] for medium in self.media)
 
-    def get_track_map(self) -> list[dict[str, dict]]:
+    def get_track_map(self) -> list[dict[Mbid, dict]]:
         return [{track['id']: track for track in medium['tracks']} for medium in self.media]
 
     @property
@@ -118,7 +120,7 @@ rate_limiter = RequestRateLimiter(delay=1.0)
 
 
 @retry(on=RequestError, attempts=3)
-async def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None:
+async def get_artist(http_client: HttpClient, artist_mbid: Mbid) -> Artist | None:
     async with rate_limiter:
         artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
         try:
@@ -154,14 +156,14 @@ async def get_releases(http_client: HttpClient, browse_url: str) -> list[Release
     return [Release(release) for release in response.get("releases", [])]
 
 
-async def get_release_by_track(http_client: HttpClient, track_mbid: str) -> Release | None:
+async def get_release_by_track(http_client: HttpClient, track_mbid: Mbid) -> Release | None:
     releases = await get_releases(
         http_client, f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}'
     )
     return next(iter(releases), None)
 
 
-async def get_releases_by_release_group(http_client: HttpClient, rg_mbid: str) -> list[Release]:
+async def get_releases_by_release_group(http_client: HttpClient, rg_mbid: Mbid) -> list[Release]:
     return await get_releases(
         http_client, f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}'
     )

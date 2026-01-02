@@ -13,7 +13,7 @@ from stamina import instrumentation
 
 from .cli.console import console
 from .logging import LoggingOnRetryHook
-from .mb_client import Artist, Release, get_artist, get_release_by_track
+from .mb_client import Mbid, Artist, Release, get_artist, get_release_by_track
 from .providers import ProviderFactory
 
 NUM_WORKERS = 4
@@ -121,8 +121,8 @@ class LyricsFetcher:
         self.force = force
         self.skip_inst = skip_inst
         self.status = console.status('idle')
-        self.artist_cache: dict[str, Artist] = {}
-        self.release_cache: dict[str, Release] = {}
+        self.artist_cache: dict[Mbid, Artist] = {}
+        self.release_cache: dict[Mbid, Release] = {}
 
     async def __aenter__(self) -> 'LyricsFetcher':
         self.http_client = HttpClient()
@@ -172,8 +172,8 @@ class LyricsFetcher:
 
         title = tags[TITLE_TAG][0] or 'Unknown title'
         album = tags[ALBUM_TAG][0] or 'Unknown album'
-        rg_mbid = tags[MB_RGID_TAG][0]
-        track_mbid = tags[MB_RTID_TAG][0]
+        rg_mbid: Mbid = tags[MB_RGID_TAG][0]
+        track_mbid: Mbid = tags[MB_RTID_TAG][0]
 
         # Handle empty MBIDs
         if not rg_mbid or not track_mbid:
@@ -198,7 +198,7 @@ class LyricsFetcher:
 
         # Fetch lyrics
         self.status.update(f'Fetching lyrics for {escape(title)}')
-        recording_mbid = track['recording']['id']
+        recording_mbid: Mbid = track['recording']['id']
         lyrics = await self.provider.fetch_recording_lyrics(track_release, recording_mbid)
         if not lyrics:
             console.print(f'No lyrics found for {escape(title)}')
@@ -234,7 +234,7 @@ class LyricsFetcher:
         if MB_AAID_TAG not in tags or ALBUMARTIST_TAG not in tags:
             return True
 
-        albumartist_mbid = tags[MB_AAID_TAG][0]
+        albumartist_mbid: Mbid = tags[MB_AAID_TAG][0]
         if not albumartist_mbid:  # handle empty MBID
             return True
 
@@ -249,7 +249,7 @@ class LyricsFetcher:
 
         return False
 
-    async def get_artist(self, artist_mbid: str, artist_name: str) -> Artist | None:
+    async def get_artist(self, artist_mbid: Mbid, artist_name: str) -> Artist | None:
         if artist_mbid in self.artist_cache:
             return self.artist_cache[artist_mbid]
 
@@ -264,7 +264,7 @@ class LyricsFetcher:
 
         return artist
 
-    async def get_release(self, track_mbid: str, album_name: str) -> Release | None:
+    async def get_release(self, track_mbid: Mbid, album_name: str) -> Release | None:
         if track_mbid in self.release_cache:
             return self.release_cache[track_mbid]
 

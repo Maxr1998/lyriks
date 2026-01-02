@@ -1,5 +1,5 @@
 from lyriks.lyrics import Lyrics
-from lyriks.mb_client import Release
+from lyriks.mb_client import Mbid, Release
 from .api import vibe_api
 from .api.vibe_api import VibeSong
 from .provider import Provider
@@ -12,7 +12,7 @@ class Vibe(Provider):
     Provider for Naver Vibe.
     """
 
-    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
+    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: Mbid) -> Lyrics | None:
         # Resolve album
         vibe_songs = await self.get_mapped_provider_songs(
             track_release,

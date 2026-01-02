@@ -1,5 +1,5 @@
 from lyriks.lyrics import Lyrics
-from lyriks.mb_client import Release
+from lyriks.mb_client import Mbid, Release
 from .api import qqm_api
 from .api.qqm_api import QQMSong
 from .provider import Provider
@@ -12,7 +12,7 @@ class QQMusic(Provider):
     Provider for QQ Music.
     """
 
-    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: str) -> Lyrics | None:
+    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: Mbid) -> Lyrics | None:
         # Resolve album
         qqm_songs = await self.get_mapped_provider_songs(
             track_release,
