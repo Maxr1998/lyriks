@@ -31,7 +31,7 @@ async def get_album_songs(http_client: HttpClient, album_id: int) -> list[GenieS
                 headers={'User-Agent': CURL_USER_AGENT},
             )
         ).json()
-    except RequestError | JSONDecodeError:
+    except JSONDecodeError:
         return None
 
     try:
@@ -76,7 +76,7 @@ async def get_stream_info(http_client: HttpClient, song_id: int) -> dict | None:
                 headers={'User-Agent': CURL_USER_AGENT},
             )
         ).json()
-    except RequestError | JSONDecodeError:
+    except JSONDecodeError:
         return None
 
     try:
