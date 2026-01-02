@@ -7,6 +7,7 @@ import trio
 from httpx import AsyncClient as HttpClient
 from httpx import RequestError
 from stamina import retry
+from trio import Lock
 
 from .cli.console import console
 from .const import VERSION
@@ -16,16 +17,6 @@ API_URL = f'{MB_URL}/ws/2'
 USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
 _ARTIST_INC = 'url-rels'
 _RELEASE_INC = 'artist-credits+release-groups+recordings+media+url-rels'
-
-last_request_time = 0
-
-
-async def handle_rate_limit():
-    global last_request_time
-    time_since = time.time() - last_request_time
-    if time_since < 1:
-        await trio.sleep(1 - time_since)
-    last_request_time = time.time()
 
 
 class Artist:
@@ -105,20 +96,39 @@ class Release:
             return None
 
 
+class RequestRateLimiter:
+    def __init__(self, delay: float):
+        self.delay: float = delay
+        self.lock: Lock = Lock()
+        self.last_request_time: float = 0
+
+    async def __aenter__(self):
+        await self.lock.acquire()
+        time_since = time.time() - self.last_request_time
+        if time_since <= self.delay:
+            await trio.sleep(self.delay - time_since)
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.last_request_time = time.time()
+        self.lock.release()
+
+
+rate_limiter = RequestRateLimiter(delay=1.0)
+
+
 @retry(on=RequestError, attempts=3)
 async def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None:
-    await handle_rate_limit()
-
-    artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
-    try:
-        response = (
-            await http_client.get(
-                artist_url,
-                headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
-            )
-        ).json()
-    except JSONDecodeError:
-        return None
+    async with rate_limiter:
+        artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
+        try:
+            response = (
+                await http_client.get(
+                    artist_url,
+                    headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+                )
+            ).json()
+        except JSONDecodeError:
+            return None
 
     if 'error' in response:
         console.print(f'[bold red]Error: {response["error"]}')
@@ -129,17 +139,16 @@ async def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None
 
 @retry(on=RequestError, attempts=3)
 async def get_releases(http_client: HttpClient, browse_url: str) -> list[Release]:
-    await handle_rate_limit()
-
-    try:
-        response = (
-            await http_client.get(
-                browse_url,
-                headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
-            )
-        ).json()
-    except JSONDecodeError:
-        return []
+    async with rate_limiter:
+        try:
+            response = (
+                await http_client.get(
+                    browse_url,
+                    headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+                )
+            ).json()
+        except JSONDecodeError:
+            return []
 
     return [Release(release) for release in response.get("releases", [])]
 
