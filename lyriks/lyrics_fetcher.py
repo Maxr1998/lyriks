@@ -90,18 +90,18 @@ async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, out
             provider = provider_factory(http_client)
             song = await provider.fetch_song_by_id(song_id)
             if song is None:
-                console.print('Song not found.')
+                console.print('Song not found.', style='warning')
                 return
             lyrics = await provider.fetch_provider_song_lyrics(song)
             if lyrics is None:
-                console.print('Failed to fetch lyrics.')
+                console.print('Failed to fetch lyrics.', style='error')
                 return
 
     extension = 'lrc' if lyrics.is_synced else 'txt'
     output_path = output_path or f'{lyrics.song_title}.{extension}'
     lyrics.write_to_file(output_path)
 
-    console.print(f'Lyrics saved to {escape(output_path)}')
+    console.print(f'Lyrics saved to \'{escape(output_path)}\'')
 
 
 class LyricsFetcher:
@@ -216,9 +216,12 @@ class LyricsFetcher:
                 if has_static_lyrics:
                     os.unlink(static_lyrics_file)
             elif has_synced_lyrics:
-                console.print(f'Not writing static lyrics for {escape(title)} as synced lyrics already exist')
+                console.print(
+                    f'Not writing static lyrics for {escape(title)} as synced lyrics already exist',
+                    style='info',
+                )
             elif self.upgrade and has_static_lyrics:
-                console.print(f'No upgraded lyrics available for {escape(title)}')
+                console.print(f'No upgraded lyrics available for {escape(title)}', style='info')
             else:
                 lyrics.write_to_file(static_lyrics_file)
                 console.print(f'Wrote static lyrics for {escape(title)} to \'{escape(static_lyrics_file)}\'')

@@ -3,7 +3,7 @@ from rich.theme import Theme
 
 custom_theme = Theme(
     {
-        # "info": "cyan",
+        "info": "cyan",
         "warning": "yellow",
         "error": "red",
     }
