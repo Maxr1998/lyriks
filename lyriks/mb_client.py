@@ -6,6 +6,7 @@ from typing import AnyStr
 import trio
 from httpx import AsyncClient as HttpClient
 from httpx import RequestError
+from rich.markup import escape
 from stamina import retry
 from trio import Lock
 
@@ -36,7 +37,7 @@ class Artist:
 
     @property
     def rich_string(self) -> str:
-        return f'[underline][link={self.url}]{self.name}[/link][/underline]'
+        return f'[underline][link={self.url}]{escape(self.name)}[/link][/underline]'
 
 
 class Release:
@@ -60,7 +61,7 @@ class Release:
 
     @property
     def rich_string(self) -> str:
-        return f'[underline][link={self.url}]{self.title}[/link][/underline]'
+        return f'[underline][link={self.url}]{escape(self.title)}[/link][/underline]'
 
     def extract_url_str(self, pattern: AnyStr) -> str | None:
         """
@@ -131,7 +132,7 @@ async def get_artist(http_client: HttpClient, artist_mbid: str) -> Artist | None
             return None
 
     if 'error' in response:
-        console.print(f'[bold red]Error: {response["error"]}')
+        console.print(f'[bold red]Error: {escape(repr(response["error"]))}')
         return None
 
     return Artist(response)
