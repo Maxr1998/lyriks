@@ -59,7 +59,7 @@ async def main(
             try:
                 await fetcher.fetch_lyrics(parent, audio_file)
             except Exception as e:
-                console.print(f'Error: could fetch lyrics for \'{audio_file}\': {e!r}', style='error')
+                console.print(f'Error: could not fetch lyrics for \'{audio_file}\': {e!r}', style='error')
             finally:
                 worker_semaphore.release()
 
