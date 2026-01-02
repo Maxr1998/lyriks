@@ -37,7 +37,7 @@ class Genie(Provider):
 
         try:
             album_id = int(stream_info['ALBUM_ID'])
-        except KeyError | ValueError:
+        except (KeyError, ValueError):
             return None
 
         genie_songs = await genie_api.get_album_songs(self.http_client, album_id)

@@ -117,7 +117,7 @@ async def get_album_songs(http_client: HttpClient, album_mid: str) -> list[QQMSo
 
     try:
         song_infos = [song['songInfo'] for song in response[0]['data']['songList']]
-    except IndexError | KeyError:
+    except (IndexError, KeyError):
         return []
 
     try:
@@ -143,7 +143,7 @@ async def get_song_info(http_client: HttpClient, song_id: int) -> QQMSong | None
 
     try:
         song_info = response[0]['data']['tracks'][0]
-    except IndexError | KeyError:
+    except (IndexError, KeyError):
         return None
 
     return QQMSong.from_song_info(song_info)

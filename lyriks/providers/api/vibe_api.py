@@ -98,7 +98,7 @@ async def get_song_lyrics(http_client: HttpClient, song: VibeSong) -> Lyrics | N
             sync_lyrics = lyrics_data['syncLyric']
             start_times = sync_lyrics['startTimeIndex']
             lines = sync_lyrics['contents'][0]['text']
-        except IndexError | KeyError:
+        except (IndexError, KeyError):
             return None
 
         try:
