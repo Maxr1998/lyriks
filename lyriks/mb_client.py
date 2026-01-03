@@ -111,17 +111,34 @@ class RequestRateLimiter:
         if time_since <= self.delay:
             await trio.sleep(self.delay - time_since)
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    def notify_request(self):
+        """
+        Notify the rate limiter that a request has been made.
+        Must be called in the context of this rate limiter.
+        """
         self.last_request_time = time.time()
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.lock.release()
 
 
 rate_limiter = RequestRateLimiter(delay=1.0)
+artist_cache: dict[Mbid, Artist | None] = {}
+release_group_cache: dict[Mbid, list[Release]] = {}
+track_release_cache: dict[Mbid, Release | None] = {}
 
 
 @retry(on=RequestError, attempts=3)
 async def get_artist(http_client: HttpClient, artist_mbid: Mbid) -> Artist | None:
+    # Initial cache check
+    if artist_mbid in artist_cache:
+        return artist_cache[artist_mbid]
+
     async with rate_limiter:
+        # Check cache again inside rate limiter lock
+        if artist_mbid in artist_cache:
+            return artist_cache[artist_mbid]
+
         artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
         try:
             response = (
@@ -132,38 +149,83 @@ async def get_artist(http_client: HttpClient, artist_mbid: Mbid) -> Artist | Non
             ).json()
         except JSONDecodeError:
             return None
+        finally:
+            rate_limiter.notify_request()
 
-    if 'error' in response:
-        console.print(f'[bold red]Error: {escape(repr(response["error"]))}')
-        return None
+        if 'error' in response:
+            console.print(f'[bold red]Error: {escape(repr(response["error"]))}')
+            return None
 
-    return Artist(response)
+        artist = Artist(response)
+
+        # Cache result
+        artist_cache[artist_mbid] = artist
+
+    return artist
 
 
 @retry(on=RequestError, attempts=3)
-async def get_releases(http_client: HttpClient, browse_url: str) -> list[Release]:
-    async with rate_limiter:
-        try:
-            response = (
-                await http_client.get(
-                    browse_url,
-                    headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
-                )
-            ).json()
-        except JSONDecodeError:
-            return []
+async def _get_releases(http_client: HttpClient, browse_url: str) -> list[Release]:
+    try:
+        response = (
+            await http_client.get(
+                browse_url,
+                headers={'User-Agent': USER_AGENT, 'Accept': 'application/json'},
+            )
+        ).json()
+    except JSONDecodeError:
+        return []
 
     return [Release(release) for release in response.get("releases", [])]
 
 
 async def get_release_by_track(http_client: HttpClient, track_mbid: Mbid) -> Release | None:
-    releases = await get_releases(
-        http_client, f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}'
-    )
-    return next(iter(releases), None)
+    # Initial cache check
+    if track_mbid in track_release_cache:
+        return track_release_cache[track_mbid]
+
+    async with rate_limiter:
+        # Check cache again inside rate limiter lock
+        if track_mbid in track_release_cache:
+            return track_release_cache[track_mbid]
+
+        try:
+            releases = await _get_releases(
+                http_client, f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}'
+            )
+        finally:
+            rate_limiter.notify_request()
+
+        release = next(iter(releases), None)
+
+        # Cache release for each contained track
+        if release is not None:
+            for media in release.media:
+                for track in media['tracks']:
+                    track_mbid: Mbid = track['id']
+                    track_release_cache[track_mbid] = release
+
+    return release
 
 
 async def get_releases_by_release_group(http_client: HttpClient, rg_mbid: Mbid) -> list[Release]:
-    return await get_releases(
-        http_client, f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}'
-    )
+    # Initial cache check
+    if rg_mbid in release_group_cache:
+        return release_group_cache[rg_mbid]
+
+    async with rate_limiter:
+        # Check cache again inside rate limiter lock
+        if rg_mbid in release_group_cache:
+            return release_group_cache[rg_mbid]
+
+        try:
+            releases = await _get_releases(
+                http_client, f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}'
+            )
+        finally:
+            rate_limiter.notify_request()
+
+        # Cache result
+        release_group_cache[rg_mbid] = releases
+
+    return releases

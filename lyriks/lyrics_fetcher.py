@@ -13,7 +13,7 @@ from stamina import instrumentation
 
 from .cli.console import console
 from .logging import LoggingOnRetryHook
-from .mb_client import Mbid, Artist, Release, get_artist, get_release_by_track
+from .mb_client import Mbid, get_artist, get_release_by_track
 from .providers import ProviderFactory
 
 NUM_WORKERS = 4
@@ -121,8 +121,6 @@ class LyricsFetcher:
         self.force = force
         self.skip_inst = skip_inst
         self.status = console.status('idle')
-        self.artist_cache: dict[Mbid, Artist] = {}
-        self.release_cache: dict[Mbid, Release] = {}
 
     async def __aenter__(self) -> 'LyricsFetcher':
         self.http_client = HttpClient()
@@ -184,8 +182,10 @@ class LyricsFetcher:
             return
 
         # Resolve release for the track
-        track_release = await self.get_release(track_mbid, album)
+        self.status.update(f'Fetching release info for {escape(album)}')
+        track_release = await get_release_by_track(self.http_client, track_mbid)
         if not track_release:
+            console.print(f'No release found for {escape(album)} with', style='warning')
             return
 
         # Resolve track
@@ -242,44 +242,16 @@ class LyricsFetcher:
         if albumartist_mbid == VARIOUS_ARTISTS_MBID:
             return True
 
-        albumartist = tags[ALBUMARTIST_TAG][0] or 'Unknown artist'
-        artist = await self.get_artist(albumartist_mbid, albumartist)
-        if not artist or self.provider.has_artist_url(artist):
+        albumartist = tags[ALBUMARTIST_TAG][0] or 'unknown artist'
+
+        self.status.update(f'Fetching artist info for {escape(albumartist)}')
+
+        artist = await get_artist(self.http_client, albumartist_mbid)
+        if not artist:
+            console.print(f'Artist {escape(albumartist)} with MBID \'{albumartist_mbid}\' not found', style='warning')
             return True
 
-        return False
-
-    async def get_artist(self, artist_mbid: Mbid, artist_name: str) -> Artist | None:
-        if artist_mbid in self.artist_cache:
-            return self.artist_cache[artist_mbid]
-
-        self.status.update(f'Fetching artist info for {escape(artist_name)}')
-
-        artist = await get_artist(self.http_client, artist_mbid)
-        if not artist:
-            console.print(f'Artist {escape(artist_name)} not found', style='warning')
-            return None
-
-        self.artist_cache[artist_mbid] = artist
-
-        return artist
-
-    async def get_release(self, track_mbid: Mbid, album_name: str) -> Release | None:
-        if track_mbid in self.release_cache:
-            return self.release_cache[track_mbid]
-
-        self.status.update(f'Fetching release info for {escape(album_name)}')
-
-        release = await get_release_by_track(self.http_client, track_mbid)
-        if not release:
-            console.print(f'No release found for {escape(album_name)}', style='warning')
-            return None
-
-        for media in release.data['media']:
-            for track in media['tracks']:
-                self.release_cache[track['id']] = release
-
-        return release
+        return self.provider.has_artist_url(artist)
 
     # noinspection DuplicatedCode
     def write_report(self, file: str | PathLike[str]):
