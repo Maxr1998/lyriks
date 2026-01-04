@@ -68,7 +68,7 @@ def cli():
     type=click.Path(),
     help=(
         'write a HTML report of releases missing album URLs to a file at PATH'
-        ' (default: report.html in the current directory)'
+        ' [default: report.html in the current directory]'
     ),
 )
 @click.option(
@@ -77,7 +77,8 @@ def cli():
     'provider_factory',
     type=ProviderChoice(),
     default='genie',
-    help='the lyrics provider to use (default: genie)',
+    show_default=True,
+    help='the lyrics provider to use',
 )
 @click.argument('collection_path', type=click.Path(exists=True, file_okay=False))
 @click.version_option(
@@ -129,7 +130,8 @@ def sync(
     'provider_factory',
     type=ProviderChoice(),
     default='genie',
-    help='the lyrics provider to use (default: genie)',
+    show_default=True,
+    help='the lyrics provider to use',
 )
 @click.option(
     '-o',
