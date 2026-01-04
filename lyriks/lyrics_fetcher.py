@@ -6,7 +6,7 @@ from pathlib import Path
 
 import mutagen
 import trio
-from httpx import AsyncClient as HttpClient
+from httpx import AsyncClient as HttpClient, NetRCAuth
 from mutagen.easymp4 import EasyMP4Tags
 from rich.markup import escape
 from stamina import instrumentation
@@ -86,7 +86,7 @@ async def main(
 
 async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, output_path: str):
     with console.status('Fetching lyrics…'):
-        async with HttpClient() as http_client:
+        async with HttpClient(auth=NetRCAuth()) as http_client:
             provider = provider_factory(http_client)
             song = await provider.fetch_song_by_id(song_id)
             if song is None:
@@ -123,7 +123,7 @@ class LyricsFetcher:
         self.status = console.status('idle')
 
     async def __aenter__(self) -> 'LyricsFetcher':
-        self.http_client = HttpClient()
+        self.http_client = HttpClient(auth=NetRCAuth())
         self.provider = self.provider_factory(self.http_client)
         self.status.start()
         return self
