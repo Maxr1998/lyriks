@@ -2,9 +2,10 @@ from pathlib import Path
 
 import click
 import trio
+from click import Context, UsageError
 
 from lyriks import mb_client
-from lyriks.const import PROGNAME, VERSION, MB_SERVER_URL_ENVVAR
+from lyriks.const import PROGNAME, VERSION, MB_SERVER_URL_ENVVAR, MB_SERVER_REQUEST_DELAY_ENVVAR
 from lyriks.lyrics.util import fix_synced_lyrics
 from lyriks.lyrics_fetcher import main, fetch_single_song
 from lyriks.mb_client import DEFAULT_MUSICBRAINZ_SERVER_URL
@@ -92,6 +93,18 @@ def cli():
     envvar=MB_SERVER_URL_ENVVAR,
     help='the MusicBrainz server URL to use, must include a scheme and the full hostname or IP address',
 )
+@click.option(
+    '--musicbrainz-server-request-delay',
+    'mb_server_request_delay',
+    type=float,
+    metavar='SECONDS',
+    envvar=MB_SERVER_REQUEST_DELAY_ENVVAR,
+    help=(
+        'minimum delay between requests to the MusicBrainz API in seconds. '
+        'Defaults to 1.0 as a safe value to comply with https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting. '
+        'Can only be set when also setting a custom MusicBrainz server URL.'
+    ),
+)
 @click.argument('collection_path', type=click.Path(exists=True, file_okay=False))
 @click.version_option(
     VERSION,
@@ -106,7 +119,9 @@ def cli():
     '--help',
     help='show this message and exit',
 )
+@click.pass_context
 def sync(
+    ctx: Context,
     check_artist: bool,
     dry_run: bool,
     upgrade: bool,
@@ -115,6 +130,7 @@ def sync(
     report_path: str,
     provider_factory: ProviderFactory,
     mb_server_url: str,
+    mb_server_request_delay: float,
     collection_path: str,
 ):
     """
@@ -124,6 +140,8 @@ def sync(
     collection_path = Path(collection_path)
 
     mb_client.set_server_url(mb_server_url)
+    if mb_server_request_delay is not None and not mb_client.set_rate_limit(mb_server_request_delay):
+        raise UsageError('--musicbrainz-server-request-delay is not allowed with the default MusicBrainz server.', ctx)
 
     trio.run(
         main,
@@ -158,6 +176,18 @@ def sync(
     help='the MusicBrainz server URL to use, must include a scheme and the full hostname or IP address',
 )
 @click.option(
+    '--musicbrainz-server-request-delay',
+    'mb_server_request_delay',
+    type=float,
+    metavar='SECONDS',
+    envvar=MB_SERVER_REQUEST_DELAY_ENVVAR,
+    help=(
+        'minimum delay between requests to the MusicBrainz API in seconds. '
+        'Defaults to 1.0 as a safe value to comply with https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting. '
+        'Can only be set when also setting a custom MusicBrainz server URL.'
+    ),
+)
+@click.option(
     '-o',
     '--output',
     'output_path',
@@ -170,13 +200,23 @@ def sync(
     '--help',
     help='show this message and exit',
 )
-def fetch(provider_factory: ProviderFactory, mb_server_url: str, output_path: str, song_id: int):
+@click.pass_context
+def fetch(
+    ctx: Context,
+    provider_factory: ProviderFactory,
+    mb_server_url: str,
+    mb_server_request_delay: float,
+    output_path: str,
+    song_id: int,
+):
     """
     Fetch lyrics for a single song from Genie.
 
     The song ID can be found in the URL of the song's Genie page.
     """
     mb_client.set_server_url(mb_server_url)
+    if mb_server_request_delay is not None and not mb_client.set_rate_limit(mb_server_request_delay):
+        raise UsageError('--musicbrainz-server-request-delay is not allowed with the default MusicBrainz server.', ctx)
 
     trio.run(fetch_single_song, provider_factory, song_id, output_path)
 

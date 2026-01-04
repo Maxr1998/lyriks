@@ -21,6 +21,8 @@ USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
 _ARTIST_INC = 'url-rels'
 _RELEASE_INC = 'artist-credits+release-groups+recordings+media+url-rels'
 
+_DEFAULT_RATE_LIMIT_DELAY = 1.0  # seconds
+
 
 class Artist:
     def __init__(self, data: dict):
@@ -123,14 +125,35 @@ class RequestRateLimiter:
 
 
 mb_api_url = f'{DEFAULT_MUSICBRAINZ_SERVER_URL}/{API_PATH}'
+rate_limiter = RequestRateLimiter(delay=_DEFAULT_RATE_LIMIT_DELAY)
+has_custom_server = False
 
 
 def set_server_url(server_url: str):
-    global mb_api_url
+    global mb_api_url, rate_limiter, has_custom_server
     mb_api_url = f'{server_url}/{API_PATH}'
+    rate_limiter = RequestRateLimiter(delay=_DEFAULT_RATE_LIMIT_DELAY)  # reset delay to default
+    has_custom_server = server_url != DEFAULT_MUSICBRAINZ_SERVER_URL
+    if has_custom_server:
+        console.print(f'Using custom MusicBrainz server URL: {server_url}', style='warning')
 
 
-rate_limiter = RequestRateLimiter(delay=0.0)
+def set_rate_limit(delay: float) -> bool:
+    """
+    Set the minimum delay between requests to the MusicBrainz API.
+    Can only be set when using a custom MusicBrainz server URL.
+
+    :return: True if the rate limit was set, False otherwise.
+    """
+    if not has_custom_server:
+        return False
+
+    global rate_limiter
+    rate_limiter = RequestRateLimiter(delay=delay)
+
+    return True
+
+
 artist_cache: dict[Mbid, Artist | None] = {}
 release_group_cache: dict[Mbid, list[Release]] = {}
 track_release_cache: dict[Mbid, Release | None] = {}
