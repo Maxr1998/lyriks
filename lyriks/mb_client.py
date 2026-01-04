@@ -15,8 +15,8 @@ from .const import VERSION
 
 Mbid = NewType('Mbid', str)
 
-MB_URL = 'https://musicbrainz.org'
-API_URL = f'{MB_URL}/ws/2'
+DEFAULT_MUSICBRAINZ_SERVER_URL = 'https://musicbrainz.org'
+API_PATH = 'ws/2'
 USER_AGENT = f'lyriks/{VERSION} ( max@maxr1998.de )'
 _ARTIST_INC = 'url-rels'
 _RELEASE_INC = 'artist-credits+release-groups+recordings+media+url-rels'
@@ -35,7 +35,7 @@ class Artist:
 
     @property
     def url(self):
-        return f'{MB_URL}/artist/{self.id}'
+        return f'{DEFAULT_MUSICBRAINZ_SERVER_URL}/artist/{self.id}'
 
     @property
     def rich_string(self) -> str:
@@ -59,7 +59,7 @@ class Release:
 
     @property
     def url(self):
-        return f'{MB_URL}/release/{self.id}'
+        return f'{DEFAULT_MUSICBRAINZ_SERVER_URL}/release/{self.id}'
 
     @property
     def rich_string(self) -> str:
@@ -122,7 +122,15 @@ class RequestRateLimiter:
         self.lock.release()
 
 
-rate_limiter = RequestRateLimiter(delay=1.0)
+mb_api_url = f'{DEFAULT_MUSICBRAINZ_SERVER_URL}/{API_PATH}'
+
+
+def set_server_url(server_url: str):
+    global mb_api_url
+    mb_api_url = f'{server_url}/{API_PATH}'
+
+
+rate_limiter = RequestRateLimiter(delay=0.0)
 artist_cache: dict[Mbid, Artist | None] = {}
 release_group_cache: dict[Mbid, list[Release]] = {}
 track_release_cache: dict[Mbid, Release | None] = {}
@@ -139,7 +147,7 @@ async def get_artist(http_client: HttpClient, artist_mbid: Mbid) -> Artist | Non
         if artist_mbid in artist_cache:
             return artist_cache[artist_mbid]
 
-        artist_url = f'{API_URL}/artist/{artist_mbid}?inc={_ARTIST_INC}'
+        artist_url = f'{mb_api_url}/artist/{artist_mbid}?inc={_ARTIST_INC}'
         try:
             response = (
                 await http_client.get(
@@ -191,7 +199,7 @@ async def get_release_by_track(http_client: HttpClient, track_mbid: Mbid) -> Rel
 
         try:
             releases = await _get_releases(
-                http_client, f'{API_URL}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}'
+                http_client, f'{mb_api_url}/release?track={track_mbid}&status=official&inc={_RELEASE_INC}'
             )
         finally:
             rate_limiter.notify_request()
@@ -220,7 +228,7 @@ async def get_releases_by_release_group(http_client: HttpClient, rg_mbid: Mbid) 
 
         try:
             releases = await _get_releases(
-                http_client, f'{API_URL}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}'
+                http_client, f'{mb_api_url}/release?release-group={rg_mbid}&status=official&inc={_RELEASE_INC}'
             )
         finally:
             rate_limiter.notify_request()

@@ -3,12 +3,15 @@ from pathlib import Path
 import click
 import trio
 
-from lyriks.const import PROGNAME, VERSION
+from lyriks import mb_client
+from lyriks.const import PROGNAME, VERSION, MB_SERVER_URL_ENVVAR
 from lyriks.lyrics.util import fix_synced_lyrics
 from lyriks.lyrics_fetcher import main, fetch_single_song
+from lyriks.mb_client import DEFAULT_MUSICBRAINZ_SERVER_URL
 from lyriks.providers import ProviderFactory
 from .default_group import DefaultGroup
 from .provider_choice import ProviderChoice
+from .url_param_type import URL
 
 
 @click.group(
@@ -80,6 +83,15 @@ def cli():
     show_default=True,
     help='the lyrics provider to use',
 )
+@click.option(
+    '--musicbrainz-server-url',
+    'mb_server_url',
+    type=URL,
+    default=DEFAULT_MUSICBRAINZ_SERVER_URL,
+    show_default=True,
+    envvar=MB_SERVER_URL_ENVVAR,
+    help='the MusicBrainz server URL to use, must include a scheme and the full hostname or IP address',
+)
 @click.argument('collection_path', type=click.Path(exists=True, file_okay=False))
 @click.version_option(
     VERSION,
@@ -102,6 +114,7 @@ def sync(
     skip_instrumentals: bool,
     report_path: str,
     provider_factory: ProviderFactory,
+    mb_server_url: str,
     collection_path: str,
 ):
     """
@@ -109,6 +122,8 @@ def sync(
     """
     report_path = Path(report_path) if report_path else None
     collection_path = Path(collection_path)
+
+    mb_client.set_server_url(mb_server_url)
 
     trio.run(
         main,
@@ -134,6 +149,15 @@ def sync(
     help='the lyrics provider to use',
 )
 @click.option(
+    '--musicbrainz-server-url',
+    'mb_server_url',
+    type=URL,
+    default=DEFAULT_MUSICBRAINZ_SERVER_URL,
+    show_default=True,
+    envvar=MB_SERVER_URL_ENVVAR,
+    help='the MusicBrainz server URL to use, must include a scheme and the full hostname or IP address',
+)
+@click.option(
     '-o',
     '--output',
     'output_path',
@@ -146,12 +170,14 @@ def sync(
     '--help',
     help='show this message and exit',
 )
-def fetch(provider_factory: ProviderFactory, output_path: str, song_id: int):
+def fetch(provider_factory: ProviderFactory, mb_server_url: str, output_path: str, song_id: int):
     """
     Fetch lyrics for a single song from Genie.
 
     The song ID can be found in the URL of the song's Genie page.
     """
+    mb_client.set_server_url(mb_server_url)
+
     trio.run(fetch_single_song, provider_factory, song_id, output_path)
 
 
