@@ -87,6 +87,23 @@ async def get_stream_info(http_client: HttpClient, song_id: int) -> dict | None:
     return stream_info
 
 
+async def get_song_info(http_client: HttpClient, song_id: int) -> GenieSong | None:
+    stream_info = await get_stream_info(http_client, song_id)
+    if stream_info is None:
+        return None
+
+    try:
+        album_id = int(stream_info['ALBUM_ID'])
+    except (KeyError, ValueError):
+        return None
+
+    genie_songs = await get_album_songs(http_client, album_id)
+    if not genie_songs:
+        return None
+
+    return next((s for s in genie_songs if s.id == song_id), None)
+
+
 @retry(on=RequestError, attempts=3)
 async def get_song_lyrics(http_client: HttpClient, song: GenieSong) -> Lyrics | None:
     # Try to fetch synced lyrics

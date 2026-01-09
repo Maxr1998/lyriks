@@ -31,20 +31,7 @@ class Genie(Provider):
         return await self.fetch_provider_song_lyrics(genie_song)
 
     async def fetch_song_by_id(self, song_id: int) -> GenieSong | None:
-        stream_info = await genie_api.get_stream_info(self.http_client, song_id)
-        if stream_info is None:
-            return None
-
-        try:
-            album_id = int(stream_info['ALBUM_ID'])
-        except (KeyError, ValueError):
-            return None
-
-        genie_songs = await genie_api.get_album_songs(self.http_client, album_id)
-        if not genie_songs:
-            return None
-
-        return next((s for s in genie_songs if s.id == song_id), None)
+        return await genie_api.get_song_info(self.http_client, song_id)
 
     async def fetch_provider_song_lyrics(self, song: GenieSong) -> Lyrics | None:
         return await genie_api.get_song_lyrics(self.http_client, song)
