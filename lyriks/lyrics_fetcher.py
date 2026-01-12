@@ -1,5 +1,6 @@
 import html
 import os
+from netrc import NetrcParseError
 from os import PathLike
 from os import path
 from pathlib import Path
@@ -86,7 +87,7 @@ async def main(
 
 async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, output_path: str):
     with console.status('Fetching lyrics…'):
-        async with HttpClient(auth=NetRCAuth()) as http_client:
+        async with HttpClient(auth=safe_netrc_auth()) as http_client:
             provider = provider_factory(http_client)
             song = await provider.fetch_song_by_id(song_id)
             if song is None:
@@ -102,6 +103,13 @@ async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, out
     lyrics.write_to_file(output_path)
 
     console.print(f'Lyrics saved to \'{escape(output_path)}\'')
+
+
+def safe_netrc_auth() -> NetRCAuth | None:
+    try:
+        return NetRCAuth()
+    except (FileNotFoundError, NetrcParseError):
+        return None
 
 
 class LyricsFetcher:
@@ -123,7 +131,7 @@ class LyricsFetcher:
         self.status = console.status('idle')
 
     async def __aenter__(self) -> 'LyricsFetcher':
-        self.http_client = HttpClient(auth=NetRCAuth())
+        self.http_client = HttpClient(auth=safe_netrc_auth())
         self.provider = self.provider_factory(self.http_client)
         self.status.start()
         return self
