@@ -200,6 +200,8 @@ async def get_song_lyrics(http_client: HttpClient, song: QQMSong) -> Lyrics | No
     lyric_content = match.group(1)
     lines = lyric_content.splitlines()
     lines = _convert_qrc_to_lrc(lines)
+    if lines is None:
+        return None
 
     return Lyrics(song_id=song.id, song_title=song.title, lines=lines, is_synced=True)
 

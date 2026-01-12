@@ -127,7 +127,7 @@ def sync(
     upgrade: bool,
     force: bool,
     skip_instrumentals: bool,
-    report_path: str,
+    report_path: str | None,
     provider_factory: ProviderFactory,
     mb_server_url: str,
     mb_server_request_delay: float,
@@ -136,9 +136,6 @@ def sync(
     """
     A command line tool that fetches lyrics from Genie.
     """
-    report_path = Path(report_path) if report_path else None
-    collection_path = Path(collection_path)
-
     mb_client.set_server_url(mb_server_url)
     if mb_server_request_delay is not None and not mb_client.set_rate_limit(mb_server_request_delay):
         raise UsageError('--musicbrainz-server-request-delay is not allowed with the default MusicBrainz server.', ctx)
@@ -151,8 +148,8 @@ def sync(
         upgrade,
         force,
         skip_instrumentals,
-        report_path,
-        collection_path,
+        Path(report_path) if report_path else None,
+        Path(collection_path),
     )
 
 
@@ -229,5 +226,4 @@ def fix(collection_path: str):
 
     Specifically, it replaces timestamps in the previously used format [mm:ss:xx] with [mm:ss.xx].
     """
-    collection_path = Path(collection_path)
-    fix_synced_lyrics(collection_path)
+    fix_synced_lyrics(Path(collection_path))

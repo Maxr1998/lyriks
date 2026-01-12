@@ -1,5 +1,3 @@
-import typing as t
-
 from click import Command, Context, Group
 from click.utils import make_str
 
@@ -13,9 +11,7 @@ class DefaultGroup(Group):
         self.default_command = kwargs.pop('default_command', None)
         super().__init__(*args, **kwargs)
 
-    def resolve_command(
-        self, ctx: Context, args: t.List[str]
-    ) -> t.Tuple[t.Optional[str], t.Optional[Command], t.List[str]]:
+    def resolve_command(self, ctx: Context, args: list[str]) -> tuple[str | None, Command | None, list[str]]:
         cmd_name = make_str(args[0])
 
         cmd = self.get_command(ctx, cmd_name)
@@ -27,7 +23,12 @@ class DefaultGroup(Group):
     def get_default_command(self) -> Command:
         if self.default_command is None:
             raise AttributeError('No default command set')
-        return self.commands.get(self.default_command)
+
+        cmd = self.commands.get(self.default_command)
+        if cmd is None:
+            raise ValueError(f'Default command "{self.default_command}" not found in group commands')
+
+        return cmd
 
     def get_help(self, ctx: Context) -> str:
         return self.get_default_command().get_help(ctx)

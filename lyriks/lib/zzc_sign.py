@@ -14,14 +14,14 @@ PART_1_INDEXES = filter(lambda x: x < 40, PART_1_INDEXES)
 
 
 def zzc_sign(payload: str) -> str:
-    hash = sha1(payload.encode('utf-8')).hexdigest().upper()
+    payload_hash = sha1(payload.encode('utf-8')).hexdigest().upper()
 
-    part1 = ''.join(map(lambda i: hash[i], PART_1_INDEXES))
-    part2 = ''.join(map(lambda i: hash[i], PART_2_INDEXES))
+    part1 = ''.join(payload_hash[i] for i in PART_1_INDEXES)
+    part2 = ''.join(payload_hash[i] for i in PART_2_INDEXES)
 
     part3 = bytearray(20)
     for i, v in enumerate(SCRAMBLE_VALUES):
-        value = v ^ int(hash[i * 2 : i * 2 + 2], 16)
+        value = v ^ int(payload_hash[i * 2 : i * 2 + 2], 16)
         part3[i] = value
     b64_part = re.sub(rb'[\\/+=]', b'', b64encode(part3)).decode('utf-8')
     return f'zzc{part1}{b64_part}{part2}'.lower()
