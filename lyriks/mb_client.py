@@ -1,7 +1,7 @@
-import re
 import time
 from json.decoder import JSONDecodeError
-from typing import AnyStr, NewType
+from re import Pattern
+from typing import NewType
 
 import trio
 from httpx import AsyncClient as HttpClient
@@ -67,13 +67,12 @@ class Release:
     def rich_string(self) -> str:
         return f'[underline][link={self.url}]{escape(self.title)}[/link][/underline]'
 
-    def extract_url_str(self, pattern: AnyStr) -> str | None:
+    def extract_url_str(self, pattern: Pattern) -> str | None:
         """
         Extracts an ID from the release's URL relations using the provided RegEx pattern.
         The pattern must contain exactly one capturing group for the ID.
         """
-        pattern_obj = re.compile(pattern)
-        if pattern_obj.groups != 1:
+        if pattern.groups != 1:
             raise ValueError("Pattern must contain exactly one capturing group: %r" % pattern)
 
         relations = self.data['relations']
@@ -81,12 +80,12 @@ class Release:
             if relation.get('target-type') != 'url' or relation.get('ended'):
                 continue
             url = relation['url']['resource']
-            match = pattern_obj.fullmatch(url)
+            match = pattern.fullmatch(url)
             if match:
                 return match.group(1)
         return None
 
-    def extract_url_id(self, pattern: AnyStr) -> int | None:
+    def extract_url_id(self, pattern: Pattern) -> int | None:
         """
         Extracts an integer ID from the release's URL relations using the provided RegEx pattern.
         The pattern must contain exactly one capturing group for the ID.

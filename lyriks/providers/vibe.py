@@ -1,5 +1,7 @@
+import re
+
 from lyriks.lyrics import Lyrics
-from lyriks.mb_client import Mbid, Release
+from lyriks.mb_client import Release
 from .api import vibe_api
 from .api.vibe_api import VibeSong
 from .provider import Provider
@@ -7,35 +9,22 @@ from .registry import register_provider
 
 
 @register_provider('vibe')
-class Vibe(Provider):
+class Vibe(Provider[int, VibeSong]):
     """
     Provider for Naver Vibe.
     """
 
-    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: Mbid) -> Lyrics | None:
-        # Resolve album
-        vibe_songs = await self.get_mapped_provider_songs(
-            track_release,
-            lambda r: r.extract_url_id(r'https://vibe.naver.com/album/(\d+)'),
-            lambda album_id: vibe_api.get_album_songs(self.http_client, album_id),
-        )
-        if not vibe_songs:
-            return None
+    provider_domain = 'vibe.naver.com'
+    album_pattern = re.compile(r'https://vibe.naver.com/album/(\d+)')
 
-        # Get song for recording
-        vibe_song = vibe_songs.get(recording_mbid)
-        if not vibe_song:
-            return None
+    def extract_album_id(self, release: Release) -> int | None:
+        return release.extract_url_id(self.album_pattern)
 
-        # Fetch lyrics
-        return await self.fetch_provider_song_lyrics(vibe_song)
+    async def fetch_album_songs(self, album_id: int) -> list[VibeSong] | None:
+        return await vibe_api.get_album_songs(self.http_client, album_id)
 
     async def fetch_song_by_id(self, song_id: int) -> VibeSong | None:
         return await vibe_api.get_song_info(self.http_client, song_id)
 
-    async def fetch_provider_song_lyrics(self, song: VibeSong) -> Lyrics | None:
+    async def fetch_song_lyrics(self, song: VibeSong) -> Lyrics | None:
         return await vibe_api.get_song_lyrics(self.http_client, song)
-
-    @property
-    def provider_domain(self) -> str:
-        return 'vibe.naver.com'

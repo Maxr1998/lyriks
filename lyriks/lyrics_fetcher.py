@@ -93,7 +93,7 @@ async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, out
             if song is None:
                 console.print('Song not found.', style='warning')
                 return
-            lyrics = await provider.fetch_provider_song_lyrics(song)
+            lyrics = await provider.fetch_song_lyrics(song)
             if lyrics is None:
                 console.print('Failed to fetch lyrics.', style='error')
                 return

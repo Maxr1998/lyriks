@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Protocol, Awaitable
+from typing import Generic, Protocol
 from typing import TypeVar
 
 from httpx import AsyncClient as HttpClient
@@ -10,13 +10,13 @@ from lyriks.mb_client import Mbid, Artist, Release
 from .api.song import Song
 from .util import pick_release_from_release_group
 
-T = TypeVar('T')
+T = TypeVar('T', str, int)
 S = TypeVar('S', bound=Song)
 
 
-class Provider(ABC):
+class Provider(Generic[T, S], ABC):
     """
-    Abstract base class for lyrics providers.
+    Generic abstract base class for lyrics providers.
     Supports fetching lyrics as part of the sync process,
     or once for a single song, identified by its provider-specific ID.
 
@@ -24,41 +24,46 @@ class Provider(ABC):
     Artists and releases that don't have a URL relationship can be recorded for later reporting.
     """
 
+    provider_domain: str
+    """The primary domain of the provider"""
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if not getattr(cls, 'provider_domain', None):
+            raise NotImplementedError(f'{cls.__name__}: provider_domain must be set')
+
     def __init__(self, http_client: HttpClient):
         self.http_client = http_client
-        self.cache: dict[str, dict[str, object] | None] = {}
+        self.cache: dict[str, dict[Mbid, S] | None] = {}
         self.missing_artists: dict[str, Artist] = {}
         self.missing_releases: dict[str, Release] = {}
 
     @abstractmethod
-    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: Mbid) -> Lyrics | None:
+    def extract_album_id(self, release: Release) -> T | None:
         """
-        Fetch lyrics for a track, identified by its recording MBID and the release it appears on.
-
-        Typically, this resolves the provider-specific song entity and then
-        delegates to fetch_provider_song_lyrics to fetch the lyrics.
+        Try to extract the provider-specific album ID from a release,
+        or None if no URL for this provider is attached to the release.
         """
         pass
 
     @abstractmethod
-    async def fetch_song_by_id(self, song_id: int) -> Song | None:
+    async def fetch_album_songs(self, album_id: T) -> list[S] | None:
+        """
+        Fetch a list of provider-specific song entities for a given album ID.
+        """
+        pass
+
+    @abstractmethod
+    async def fetch_song_by_id(self, song_id: int) -> S | None:
         """
         Fetch a provider-specific song entity by its ID.
         """
         pass
 
     @abstractmethod
-    async def fetch_provider_song_lyrics(self, song: Song) -> Lyrics | None:
+    async def fetch_song_lyrics(self, song: S) -> Lyrics | None:
         """
-        Fetch lyrics for a given song entity. Its content may be provider-specific.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def provider_domain(self) -> str:
-        """
-        Get the primary domain of the provider.
+        Fetch lyrics for a given song entity.
         """
         pass
 
@@ -78,24 +83,34 @@ class Provider(ABC):
 
         return False
 
-    async def get_mapped_provider_songs(
-        self,
-        track_release: Release,
-        selector: Callable[[Release], T | None],
-        fetcher: Callable[[T], Awaitable[list[S] | None]],
-    ) -> dict[Mbid, S] | None:
+    async def fetch_recording_lyrics(self, track_release: Release, recording_mbid: Mbid) -> Lyrics | None:
+        """
+        Fetch lyrics for a track, identified by its recording MBID and the release it appears on.
+        """
+        # Resolve album
+        songs = await self.get_mapped_provider_songs(track_release)
+        if not songs:
+            return None
+
+        # Get song for recording
+        song = songs.get(recording_mbid)
+        if not song:
+            return None
+
+        # Fetch lyrics
+        return await self.fetch_song_lyrics(song)
+
+    async def get_mapped_provider_songs(self, track_release: Release) -> dict[Mbid, S] | None:
         """
         Get songs for a track release, matched to its recordings.
 
         :param track_release: The release to fetch and map songs for.
-        :param selector: A lambda function extracting a provider-specific identifier from a release if available.
-        :param fetcher: A function that takes the provider-specific identifier and returns a list of songs.
         :return: A dictionary mapping recording MBIDs to provider-specific songs, or None if there was an error.
         """
         if track_release.id in self.cache:
             return self.cache[track_release.id]
 
-        result = await pick_release_from_release_group(self.http_client, track_release, selector)
+        result = await pick_release_from_release_group(self.http_client, track_release, self.extract_album_id)
         if not result:
             console.print(f'No URL found for release {track_release.rich_string}', style='warning')
             self.cache[track_release.id] = None
@@ -103,7 +118,7 @@ class Provider(ABC):
             return None
         matched_release, album_id = result
 
-        provider_songs = await fetcher(album_id)
+        provider_songs = await self.fetch_album_songs(album_id)
         if not provider_songs:
             self.cache[track_release.id] = None
             return None
