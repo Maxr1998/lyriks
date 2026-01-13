@@ -64,6 +64,21 @@ class QQMSong(Song):
         return cls(id=song_id, mid=song_mid, album_index=album_index, title=title, artists=artists)
 
 
+@dataclass(init=False)
+class QQMId(str):
+    """
+    Unique identifier for an entity in QQ Music with either a MID or an ID.
+    """
+
+    mid: str
+    id: int
+
+    def __init__(self, value: str):
+        is_digit = value.isdigit()
+        self.mid = value if not is_digit else ''
+        self.id = int(value) if is_digit else 0
+
+
 @retry(on=RequestError, attempts=3)
 async def _qqm_request(http_client: HttpClient, modules: list[dict]) -> list[dict]:
     request = dict([('comm', QQM_COMM)] + [(f'req_{i + 1}', module) for i, module in enumerate(modules)])
@@ -100,14 +115,14 @@ async def _qqm_request(http_client: HttpClient, modules: list[dict]) -> list[dic
     return response_modules
 
 
-async def get_album_songs(http_client: HttpClient, album_mid: str) -> list[QQMSong]:
+async def get_album_songs(http_client: HttpClient, album_qid: QQMId) -> list[QQMSong]:
     response = await _qqm_request(
         http_client,
         [
             {
                 'module': 'music.musichallAlbum.AlbumSongList',
                 'method': 'GetAlbumSongList',
-                'param': {'albumMid': album_mid, 'albumID': 0, 'begin': 0, 'num': 100, 'order': 2},
+                'param': {'albumMid': album_qid.mid, 'albumID': album_qid.id, 'begin': 0, 'num': 100, 'order': 2},
             }
         ],
     )
