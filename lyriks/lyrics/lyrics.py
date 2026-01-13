@@ -15,9 +15,11 @@ class Lyrics:
     lines: list[str]
     is_synced: bool
 
-    def write_to_file(self, path: str):
+    def write_to_file(self, path: str | None = None) -> str:
+        path = path or f'{self.song_title}.{"lrc" if self.is_synced else "txt"}'
         with open(path, 'w', encoding='utf-8', opener=opener) as f:
             f.writelines(self.lines)
+        return path
 
     @classmethod
     def from_dict(cls, song_id: int, song_title: str, lyrics_dict: dict[int, str]) -> 'Lyrics':

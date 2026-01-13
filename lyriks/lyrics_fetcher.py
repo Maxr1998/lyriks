@@ -98,10 +98,7 @@ async def fetch_single_song(provider_factory: ProviderFactory, song_id: int, out
                 console.print('Failed to fetch lyrics.', style='error')
                 return
 
-    extension = 'lrc' if lyrics.is_synced else 'txt'
-    output_path = output_path or f'{lyrics.song_title}.{extension}'
-    lyrics.write_to_file(output_path)
-
+    output_path = lyrics.write_to_file(output_path)
     console.print(f'Lyrics saved to \'{escape(output_path)}\'')
 
 
