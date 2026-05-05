@@ -1,3 +1,4 @@
+from .bugs import Bugs
 from .genie import Genie
 from .provider import Provider, ProviderFactory
 from .qqm import QQMusic
@@ -7,6 +8,7 @@ from .vibe import Vibe
 __all__ = [
     'Provider',
     'ProviderFactory',
+    'Bugs',
     'Genie',
     'QQMusic',
     'Vibe',
