@@ -134,7 +134,7 @@ def sync(
     collection_path: str,
 ):
     """
-    A command line tool that fetches lyrics from Genie.
+    A command line tool that fetches lyrics from various streaming providers.
     """
     mb_client.set_server_url(mb_server_url)
     if mb_server_request_delay is not None and not mb_client.set_rate_limit(mb_server_request_delay):
@@ -207,9 +207,9 @@ def fetch(
     song_id: int,
 ):
     """
-    Fetch lyrics for a single song from Genie.
+    Fetch lyrics for a single song from the selected provider.
 
-    The song ID can be found in the URL of the song's Genie page.
+    The song ID can be found in the URL of the song's page on the provider's website.
     """
     mb_client.set_server_url(mb_server_url)
     if mb_server_request_delay is not None and not mb_client.set_rate_limit(mb_server_request_delay):

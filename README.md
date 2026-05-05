@@ -1,6 +1,6 @@
 # lyriks [![License][license-badge]][license-link] [![PyPI version][version-badge]][version-link] ![PyPI downloads][pypi-downloads]
 
-A command line tool that fetches lyrics from [Genie](https://www.genie.co.kr/).
+A command line tool that fetches lyrics from various streaming providers.
 
 ### Installation
 
@@ -37,8 +37,8 @@ lyriks /path/to/music/folder
 The script will search for audio files (`.flac` or `.mp3`) in the given folder, and attempt to fetch the lyrics.
 Note that it will only be able to do that for files that are properly tagged with MusicBrainz MBIDs
 (specifically [`musicbrainz_releasegroupid`][rgid] and [`musicbrainz_trackid`][tid]).
-It then uses them to resolve the Genie album ID from the release or release group on MusicBrainz.
-Thus, at least one release in the release group must have a URL relationship to the album on Genie.
+It then uses them to resolve the provider ID from the release or release group on MusicBrainz.
+Thus, at least one release in the release group must have an album URL relationship for the selected provider.
 
 If successful, the lyrics will be downloaded and stored next to the audio files with the appropriate extension
 (`.lrc` or `.txt`, depending on whether they're synced or not).
