@@ -4,35 +4,54 @@ A command line tool that fetches lyrics from various streaming providers.
 
 ### Installation
 
-You can easily install lyriks from PyPI by using `pip`:
+You can install lyriks from PyPI using `uv` or `pip`:
 
 ```bash
+# uv
+uv tool install lyriks
+
+# pip
 pip install lyriks
 ```
 
-To install it from source instead, clone the repository and build the wheel before installing it with pip:
+To install it from source instead, clone the repository and build the wheel before installing it:
 
 ```bash
 uv build
-pip install dist/lyriks-0.5.7-py3-none-any.whl
+
+# uv
+uv tool install dist/lyriks-*-py3-none-any.whl
+
+# pip
+pip install dist/lyriks-*-py3-none-any.whl
 ```
 
 You can also run the script directly from within the repository:
 
 ```bash
-`./lyriks.py /path/to/music/folder`
+./lyriks.py /path/to/music/folder
 ```
 
 Make sure to first install the required dependencies from `pyproject.toml` (i.e. `uv sync`).
 
 ### Usage
 
-Simply run the script with the path to the folder containing your music as an argument.
+Run the script with the path to the folder containing your music as an argument.
 This can be your whole collection, a single artist, or a single album.
 
 ```bash
 lyriks /path/to/music/folder
 ```
+
+By default, lyrics are fetched from [Genie](https://www.genie.co.kr/),
+but you can switch to other providers with the `--provider`/`-P` flag.
+
+Currently supported providers are:
+
+- [Genie](https://www.genie.co.kr/)
+- [Bugs!](https://music.bugs.co.kr/)
+- [Naver Vibe](https://vibe.naver.com/)
+- [QQ Music](https://y.qq.com/)
 
 The script will search for audio files (`.flac` or `.mp3`) in the given folder, and attempt to fetch the lyrics.
 Note that it will only be able to do that for files that are properly tagged with MusicBrainz MBIDs
@@ -42,6 +61,12 @@ Thus, at least one release in the release group must have an album URL relations
 
 If successful, the lyrics will be downloaded and stored next to the audio files with the appropriate extension
 (`.lrc` or `.txt`, depending on whether they're synced or not).
+
+For more information on usage, check the help message:
+
+```bash
+lyriks --help
+```
 
 ### Exclude files and folders
 
