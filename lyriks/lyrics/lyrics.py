@@ -14,6 +14,7 @@ class Lyrics:
     song_title: str
     lines: list[str]
     is_synced: bool
+    source: str
 
     def write_to_file(self, path: str | None = None) -> str:
         path = path or f'{self.song_title}.{"lrc" if self.is_synced else "txt"}'
@@ -22,11 +23,17 @@ class Lyrics:
         return path
 
     @classmethod
-    def from_dict(cls, song_id: int, song_title: str, lyrics_dict: dict[int, str]) -> 'Lyrics':
+    def from_dict(cls, song_id: int, song_title: str, lyrics_dict: dict[int, str], source: str) -> 'Lyrics':
         """
         Constructs a synced lyrics object from a dict of timestamps/lines.
         """
-        return cls(song_id=song_id, song_title=song_title, lines=_convert_to_lrc(lyrics_dict), is_synced=True)
+        return cls(
+            song_id=song_id,
+            song_title=song_title,
+            lines=_convert_to_lrc(lyrics_dict),
+            is_synced=True,
+            source=source,
+        )
 
 
 def _convert_to_lrc(lyrics_dict: dict[int, str]) -> list[str]:

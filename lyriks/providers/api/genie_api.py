@@ -16,6 +16,8 @@ GENIE_STREAM_INFO_API_URL = 'https://stm.genie.co.kr/player/j_StmInfo.json?xgnm=
 
 CURL_USER_AGENT = 'curl/8.7.1'  # for whatever reason, this works, but the python-requests UA doesn't
 
+SOURCE = 'genie'
+
 
 @dataclass
 class GenieSong(Song):
@@ -128,7 +130,7 @@ async def get_song_lyrics(http_client: HttpClient, song: GenieSong) -> Lyrics | 
         # Convert timestamps and cleanup lines
         lyrics_dict: dict[int, str] = {int(timestamp): line.strip() for timestamp, line in raw_lyrics.items()}
 
-        return Lyrics.from_dict(song.id, song.title, lyrics_dict)
+        return Lyrics.from_dict(song.id, song.title, lyrics_dict, SOURCE)
     else:
         # Fall back to static lyrics from stream info
         stream_info = await get_stream_info(http_client, song.id)
@@ -150,4 +152,4 @@ async def get_song_lyrics(http_client: HttpClient, song: GenieSong) -> Lyrics | 
         if '이 곡은 연주곡 입니다.' in lines:
             return None
 
-        return Lyrics(song_id=song.id, song_title=song.title, lines=lines, is_synced=False)
+        return Lyrics(song_id=song.id, song_title=song.title, lines=lines, is_synced=False, source=SOURCE)

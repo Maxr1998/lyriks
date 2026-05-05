@@ -13,6 +13,8 @@ BUGS_API_URL = "https://mapi.bugs.co.kr/music/5/multi/invoke/map"
 BUGS_ACCESS_TOKEN_URL = "https://secure.bugs.co.kr/api/5/appToken"
 BUGS_APP_CLIENT_SECRET = "d33b!z7xeu"
 
+SOURCE = 'bugs'
+
 
 @dataclass
 class BugsApiAccessToken:
@@ -182,9 +184,9 @@ def _parse_synced_lyrics(raw: str, song_id: int, song_title: str) -> Lyrics | No
             lyrics_dict[timestamp] = line
     except ValueError:
         return None
-    return Lyrics.from_dict(song_id, song_title, lyrics_dict)
+    return Lyrics.from_dict(song_id, song_title, lyrics_dict, SOURCE)
 
 
 def _parse_normal_lyrics(raw: str, song_id: int, song_title: str) -> Lyrics:
     lines = [f'{line}\n' for line in raw.splitlines()]
-    return Lyrics(song_id=song_id, song_title=song_title, lines=lines, is_synced=False)
+    return Lyrics(song_id=song_id, song_title=song_title, lines=lines, is_synced=False, source=SOURCE)

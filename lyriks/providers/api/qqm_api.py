@@ -41,6 +41,8 @@ CHROME_USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 )
 
+SOURCE = 'qqmusic'
+
 LYRIC_CONTENT_TAG = 'LyricContent'
 LYRIC_CONTENT_REGEX = re.compile(r'LyricContent="([\s\S]*?)"\s*/>')
 
@@ -218,7 +220,7 @@ async def get_song_lyrics(http_client: HttpClient, song: QQMSong) -> Lyrics | No
     if lines is None:
         return None
 
-    return Lyrics(song_id=song.id, song_title=song.title, lines=lines, is_synced=True)
+    return Lyrics(song_id=song.id, song_title=song.title, lines=lines, is_synced=True, source=SOURCE)
 
 
 def _decrypt_content_node(content_node) -> str | None:

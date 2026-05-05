@@ -12,6 +12,8 @@ VIBE_LYRICS_API_URL = 'https://apis.naver.com/vibeWeb/musicapiweb/vibe/v4/lyric/
 VIBE_ALBUM_TRACKS_API_URL = 'https://apis.naver.com/vibeWeb/musicapiweb/album/{album_id:d}/tracks?start=1&display=1000'
 VIBE_TRACK_API_URL = 'https://apis.naver.com/vibeWeb/musicapiweb/track/{song_id:d}'
 
+SOURCE = 'vibe'
+
 
 @dataclass
 class VibeSong(Song):
@@ -109,13 +111,13 @@ async def get_song_lyrics(http_client: HttpClient, song: VibeSong) -> Lyrics | N
         # Convert timestamps and cleanup lines
         lyrics_dict: dict[int, str] = {int(timestamp * 1000): line.strip() for timestamp, line in joined_lyrics}
 
-        return Lyrics.from_dict(song.id, song.title, lyrics_dict)
+        return Lyrics.from_dict(song.id, song.title, lyrics_dict, SOURCE)
     elif lyrics_data.get('hasNormalLyric'):
         try:
             lines = lyrics_data['normalLyric']['text'].split('\n')
         except KeyError:
             return None
 
-        return Lyrics(song_id=song.id, song_title=song.title, lines=lines, is_synced=False)
+        return Lyrics(song_id=song.id, song_title=song.title, lines=lines, is_synced=False, source=SOURCE)
 
     return None
