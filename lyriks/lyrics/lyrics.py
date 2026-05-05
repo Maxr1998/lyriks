@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 
+from lyriks.const import PROGNAME
 from .util import format_lrc_timestamp
 
 
@@ -19,6 +20,14 @@ class Lyrics:
     def write_to_file(self, path: str | None = None) -> str:
         path = path or f'{self.song_title}.{"lrc" if self.is_synced else "txt"}'
         with open(path, 'w', encoding='utf-8', opener=opener) as f:
+            if self.is_synced:
+                metadata = [
+                    f'[ti: {self.song_title}]\n',
+                    f'[re: {PROGNAME}]\n',
+                    f'[source: {self.source}]\n',
+                    '\n',
+                ]
+                f.writelines(metadata)
             f.writelines(self.lines)
         return path
 
