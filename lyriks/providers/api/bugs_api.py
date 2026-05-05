@@ -176,7 +176,7 @@ def _parse_lyrics(lyrics_data: dict[str, str], song_id: int, song_title: str) ->
 def _parse_synced_lyrics(raw: str, song_id: int, song_title: str) -> Lyrics | None:
     try:
         lyrics_dict = {}
-        for raw_line in raw.split('#'):
+        for raw_line in raw.split('＃'):
             timestamp_str, line = raw_line.split('|', 1)
             timestamp = int(float(timestamp_str) * 1000)
             lyrics_dict[timestamp] = line
