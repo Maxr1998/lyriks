@@ -216,11 +216,19 @@ async def get_song_lyrics(http_client: HttpClient, song: QQMSong) -> Lyrics | No
 
     lyric_content = match.group(1)
     lines = lyric_content.splitlines()
-    lines = _convert_qrc_to_lrc(lines)
-    if lines is None:
+    lyric_data = _convert_qrc_to_lrc(lines)
+    if lyric_data is None:
         return None
 
-    return Lyrics(song_id=song.id, song_title=song.title, lines=lines, is_synced=True, source=SOURCE)
+    metadata, lrc_lines = lyric_data
+    return Lyrics(
+        song_id=song.id,
+        song_title=song.title,
+        lines=lrc_lines,
+        is_synced=True,
+        source=SOURCE,
+        extra_metadata=metadata,
+    )
 
 
 def _decrypt_content_node(content_node) -> str | None:
@@ -251,12 +259,13 @@ def _decrypt_content_node(content_node) -> str | None:
     return content_text
 
 
-def _convert_qrc_to_lrc(lines: list[str]) -> list[str] | None:
+def _convert_qrc_to_lrc(lines: list[str]) -> tuple[dict[str, str], list[str]] | None:
     """
     Converts lines from QRC format to LRC format.
     """
+    metadata = {}
     lrc_lines = []
-    metadata_regex = re.compile(r'\[[a-z]+:[^]]*]')
+    metadata_regex = re.compile(r'\[([a-z]+): *([^]]*)]')
     line_timestamp_regex = re.compile(r'\[(\d+),(\d+)]')
     words_regex = re.compile(r'(.*?)\((\d+),(\d+)\)')
 
@@ -265,9 +274,12 @@ def _convert_qrc_to_lrc(lines: list[str]) -> list[str] | None:
             # Ignore lines without a start tag
             continue
 
-        if metadata_regex.match(line):
-            # Copy metadata lines as-is
-            lrc_lines.append(f'{line}\n')
+        metadata_match = metadata_regex.match(line)
+        if metadata_match:
+            key = metadata_match.group(1)
+            value = metadata_match.group(2)
+            if value:  # skip empty values
+                metadata[key] = value
             continue
 
         line_timestamp_match = line_timestamp_regex.match(line)
@@ -290,4 +302,4 @@ def _convert_qrc_to_lrc(lines: list[str]) -> list[str] | None:
 
         lrc_lines.append(f'{lrc_line_timestamp}{lrc_line}\n')
 
-    return lrc_lines
+    return metadata, lrc_lines
